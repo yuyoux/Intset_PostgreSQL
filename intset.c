@@ -108,8 +108,6 @@ intset_out(PG_FUNCTION_ARGS)
 }
 
 
-
-
 /*****************************************************************************
  * New Operators
  *
@@ -151,7 +149,7 @@ Datum
 intset_contains(PG_FUNCTION_ARGS)
 {
 	intSet *set = (intSet *) PG_GETARG_POINTER(0);
-	int32 value;
+	int32 value=0;
 	bool res;
 	
 	res = intset_contains_internal(set, value);
@@ -371,10 +369,11 @@ intset_intersection(PG_FUNCTION_ARGS){
 //---------------------------------------------//
 
 //----------------------6----------------------//
-/*
-intSet
-intset_union_internal(intSet *setA, intSet *setB){
 
+/*intSet
+intset_union_internal(intSet *setA, intSet *setB){
+	intset_sort_internal(setA);
+	intset_sort_internal(setB);
 
 }
 
@@ -396,6 +395,7 @@ intset_union(PG_FUNCTION_ARGS)
 	//pfree(b);
 
 	PG_RETURN_POINTER(result);
-}
-*/
+}*/
+
+
 
