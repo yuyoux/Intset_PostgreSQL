@@ -262,6 +262,49 @@ intset_equal(PG_FUNCTION_ARGS){
 //---------------------------------------------//
 
 //---------------------5----------------------//
+bool
+intset_intersection_internal(Intset *setA, Intset *setB)
+{
+	int			na,
+				nb;
+	int			i,
+				j;
+	int		   *da,
+			   *db;
+
+	na = intset_cardinality_internal(setA);
+	nb = intset_cardinality_internal(setB);
+	da = setA->data;
+	db = setB->data;
+
+	i = j = 0;
+	while (i < na && j < nb)
+	{
+		if (da[i] < db[j])
+			i++;
+		else if (da[i] == db[j])
+			return TRUE;
+		else
+			j++;
+	}
+
+	return FALSE;
+}
+
+PG_FUNCTION_INFO_V1(intset_intersection);
+
+Datum
+intset_intersection(PG_FUNCTION_ARGS){
+	Intset *setA = (Intset *) PG_GETARG_POINTER(0);
+	Intset *setB = (Intset *) PG_GETARG_POINTER(1);
+	bool res;
+	
+	res = intset_intersection_internal(setA, setB);
+	PG_RETURN_BOOL(res);
+
+}
+
+//---------------------------------------------//
 
 /*****************************************************************************
  * Operator class for defining B-tree index
