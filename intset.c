@@ -38,6 +38,8 @@ intset_in(PG_FUNCTION_ARGS)
 	
 	char *temp=malloc(index);
 	char *token;
+	int *res;
+	intSet  *result ;
 	
 	for(i =0;i<index;i++){                  //strip the whitespaces and count the nb of element 
 		if(str[i]!=' '){
@@ -54,8 +56,9 @@ intset_in(PG_FUNCTION_ARGS)
 	//printf("length:%d\n",length);    
     
 	j=0;
-	int res[length];
-	memset(res,0,length);
+	
+	//memset(res,0,length);
+	res = (int*)calloc(length,sizeof(int));
 
 	
 	
@@ -73,8 +76,9 @@ intset_in(PG_FUNCTION_ARGS)
 	}
 	if(token==NULL) printf("invalid\n");          //check for '}'
 //----------------------------------------------------
-	intSet  *result =(intSet *)palloc(VARHDRSZ +length);
-	SET_VARSIZE(result,VARSIZE+length);
+	
+	result =(intSet *)palloc(VARHDRSZ +length);
+	SET_VARSIZE(result,VARHDRSZ+length);
 
 	result->length = length;
 	memcpy(result->data,res,length);
@@ -89,18 +93,20 @@ intset_out(PG_FUNCTION_ARGS)
 {
 	intSet    *intset = (intSet *) PG_GETARG_POINTER(0);
 	int	 i,offset=1;
-
-
-	char out=[2*intset->length+2];
+	char *out;
+	int *res = intset->data;
+	out = (char*)calloc(2*intset->length+2,sizeof(char));
+	//memset(out,0,2*intset->length+2);
 	out[0]='{';
 	for(i =0;i< intset->length;i++) {
 		offset+=sprintf(out+offset,"%d,",res[i]);
 
 	}
-	sprintf(out+offset-1,"}\n\0,");
+	psprintf(out+offset-1,"}\n\0");
 
 	PG_RETURN_CSTRING(out);
 }
+
 
 
 
