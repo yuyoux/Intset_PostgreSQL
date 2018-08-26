@@ -97,7 +97,7 @@ intset_out(PG_FUNCTION_ARGS)
 		offset+=sprintf(out+offset,"%d,",res[i]);
 
 	}
-	sprintf(out+offset-1,"}\n\0,");
+	sprintf(out+offset-1,"}\n\0");
 
 	PG_RETURN_CSTRING(out);
 }
