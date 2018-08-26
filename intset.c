@@ -31,19 +31,49 @@ Datum
 intset_in(PG_FUNCTION_ARGS)
 {
 	char	   *str = PG_GETARG_CSTRING(0);
-	double		x,
-				y;
 	Intset    *result;
-
-	if (sscanf(str, " ( %lf , %lf )", &x, &y) != 2)
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-				 errmsg("invalid input syntax for complex: \"%s\"",
-						str)));
-
+//------------------------------------------
+	int length=0;
+	int i,j=0;
+	int index =strlen(str);
+	
+	char *temp=malloc(index);
+	char *token;
+	
+	for(i =0;i<index;i++){                  //strip the whitespaces and count the nb of element 
+		if(str[i]!=' '){
+			if(str[i]==',') length++;
+			temp[j]=str[i];
+			j++;
+		}
+		temp[j]=0;
+	}
+ 
+	//printf("index: %d\n",strlen(temp));
+         
+	if (length>1) length++;
+	//printf("length:%d\n",length);    
+    
+	j=0;
+	int res[length];
+	memset(res,0,length);
+	token= strtok(temp,",");
+	if(temp[0]!='{')  printf("invalid input");        //check for '{'
+	token++;
+	while(token!=NULL){		     //get the value				
+		res[j]= atoi(token);
+		//printf("res-%d\n",res[j]);
+		j++;
+		if (token[strlen(token)-1]=='}') {
+			//printf("ok\n");
+			break;}
+		token=strtok(NULL,",");			
+	}
+	if(token==NULL) printf("invalid\n");          //check for '}'
+//----------------------------------------------------
 	result = (Intset *) palloc(sizeof(Intset));
-	result->x = x;
-	result->y = y;
+	result->length = length;
+	result->daya = res;
 	PG_RETURN_POINTER(result);
 }
 
