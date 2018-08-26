@@ -1,12 +1,3 @@
-/*
- * src/tutorial/complex.c
- *
- ******************************************************************************
-  This file contains routines that can be bound to a Postgres backend and
-  called by the backend in the process of processing queries.  The calling
-  format for these routines is dictated by Postgres architecture.
-******************************************************************************/
-
 #include "postgres.h"
 
 #include "fmgr.h"
@@ -14,17 +5,25 @@
 
 PG_MODULE_MAGIC;
 
-typedef struct Intset
+typedef struct intSet
 {
 	int32	length;
 	int32	data[FLEXIBLE_ARRAY_MEMBER];
-} Intset;
+} intSet;
+
+bool intset_contains_internal(intSet *set, int32 value);
+intSet intset_sort_internal(intSet *set);
+bool intset_containset_internal(intSet *setA, intSet *setB);
+bool intset_equal_internal(intSet *setA, intSet *setB);
+bool intset_intersection_internal(intSet *setA, intSet *setB);
+//intSet intset_union_internal(intSet *setA, intSet *setB);
+
+
+
 
 
 /*****************************************************************************
  * Input/Output functions
- *****************************************************************************/
-
  *****************************************************************************/
 PG_FUNCTION_INFO_V1(intset_in);
 
@@ -88,7 +87,7 @@ PG_FUNCTION_INFO_V1(intset_out);
 Datum
 intset_out(PG_FUNCTION_ARGS)
 {
-	Intset    *intset = (Intset *) PG_GETARG_POINTER(0);
+	intSet    *intset = (intSet *) PG_GETARG_POINTER(0);
 	int	 i,offset=1;
 
 
@@ -102,6 +101,7 @@ intset_out(PG_FUNCTION_ARGS)
 
 	PG_RETURN_CSTRING(out);
 }
+
 
 
 /*****************************************************************************
@@ -128,7 +128,7 @@ intset_out(PG_FUNCTION_ARGS)
 
 //------------------1----------------------//
 bool
-intset_contains_internal(Intset *set, int32 value)
+intset_contains_internal(intSet *set, int32 value)
 {
 	int32 i = 0;
 	for (i=0; i < set->length; ++i){
@@ -144,7 +144,7 @@ PG_FUNCTION_INFO_V1(intset_contains);
 Datum
 intset_contains(PG_FUNCTION_ARGS)
 {
-	Intset *set = (Intset *) PG_GETARG_POINTER(0);
+	intSet *set = (intSet *) PG_GETARG_POINTER(0);
 	int32 value;
 	bool res;
 	
@@ -154,47 +154,53 @@ intset_contains(PG_FUNCTION_ARGS)
 //-----------------------------------------//
 
 //-------------------2---------------------//
-Intset
-intset_sort_internal(Intset *set) //sort the array and remove duplicated item
+intSet
+intset_sort_internal(intSet *set) //sort the array and remove duplicated item
 {
 	int32 count = set->length;
-
+	int i,j,k=0,m=0;
 	for(i=0;i<count-1;i++){		//bubble sort
 		for(j=0;j<count-i;j++){
-			if(set[j]>set[j+1]){
-				int temp=set[j];
-				set[j]=set[j+1];
-				set[j+1]=temp;
+			if(set->data[j]>set->data[j+1]){
+				int32 temp=set->data[j];
+				set->data[j]=set->data[j+1];
+				set->data[j+1]=temp;
 			}
 		}
 	}
-	for(i=0;i<set.length;i++){	//remove duplicated items
-		for(j=i+1;j<set.length;j++){
-			if(set[i] == set[j]){
-				set.splice(j,1);
-				j--;
+	/*for(k=0;k<set->length;k++){	//remove duplicated items & count
+		for(m=k+1;m<set->length;m++){
+			if(set->data[k] == set->data[m]){
+				set->data.splice(m,1);
+				m--;
+				c--;
 			}
 		}
+	}*/
+	
+   	for (k=0; k<set->length-1; k++) 
+   	{
+		while (set->data[k] == set->data[k+1]) 
+		{
+			k++;
+	        }
+		set->data[m++] = set->data[k];
 	}
+
+	set->length = m;
 	return set;
 }
 
-int
-intset_cardinality__internal(Intset *set) //cardinality
-{
-	set2 = intset_sort_internal(set);
-	int32 count = set2.length;
-	return count;
-}
 
 PG_FUNCTION_INFO_V1(intset_cardinality);
 
 Datum
 intset_cardinality(PG_FUNCTION_ARGS)
 {
-	Intset *set = (Intset *) PG_GETARG_POINTER(0);
-	int32 count = intset_cardinality_internal(set);
-	PG_RETURN_INT32(count);
+	intSet *set = (intSet *) PG_GETARG_POINTER(0);
+	intset_sort_internal(set);
+	int32 counter = set->length;
+	PG_RETURN_INT32(counter);
 }
 //-------------------------------------------//
 
@@ -202,7 +208,7 @@ intset_cardinality(PG_FUNCTION_ARGS)
 //referenced from _int_tool.c from intarray
 //arguments are assumed sorted & uniqueified
 bool
-intset_containset_internal(Intset *setA, Intset *setB)
+intset_containset_internal(intSet *setA, intSet *setB)
 {
 	int			na,
 				nb;
@@ -211,9 +217,11 @@ intset_containset_internal(Intset *setA, Intset *setB)
 				n;
 	int		   *da,
 			   *db;
+	intset_sort_internal(setA);
+	intset_sort_internal(setB);	
 
-	na = intset_cardinality_internal(setA);
-	nb = intset_cardinality_internal(setB);
+	na = setA->length;
+	nb = setB->length;
 	da = setA->data;
 	db = setB->data;
 
@@ -241,8 +249,8 @@ PG_FUNCTION_INFO_V1(intset_containset);
 Datum
 intset_containset(PG_FUNCTION_ARGS)
 {
-	Intset *setA = (Intset *) PG_GETARG_POINTER(0);
-	Intset *setB = (Intset *) PG_GETARG_POINTER(1);
+	intSet *setA = (intSet *) PG_GETARG_POINTER(0);
+	intSet *setB = (intSet *) PG_GETARG_POINTER(1);
 	bool res;
 	
 	res = intset_containset_internal(setA, setB);
@@ -255,7 +263,7 @@ intset_containset(PG_FUNCTION_ARGS)
 //---------------------4--------------------//
 //referenced from _int_op.c from intarray
 bool
-intset_equal_internal(Intset *setA, Intset *setB)
+intset_equal_internal(intSet *setA, intSet *setB)
 {
 	int			na,
 				nb;
@@ -264,8 +272,11 @@ intset_equal_internal(Intset *setA, Intset *setB)
 			   *db;
 	bool		result;
 
-	na = intset_cardinality_internal(setA);
-	nb = intset_cardinality_internal(setB);
+	intset_sort_internal(setA);
+	intset_sort_internal(setB);	
+
+	na = setA->length;
+	nb = setB->length;
 	da = setA->data;
 	db = setB->data;
 
@@ -294,8 +305,8 @@ PG_FUNCTION_INFO_V1(intset_equal);
 
 Datum
 intset_equal(PG_FUNCTION_ARGS){
-	Intset *setA = (Intset *) PG_GETARG_POINTER(0);
-	Intset *setB = (Intset *) PG_GETARG_POINTER(1);
+	intSet *setA = (intSet *) PG_GETARG_POINTER(0);
+	intSet *setB = (intSet *) PG_GETARG_POINTER(1);
 	bool res;
 	
 	res = intset_equal_internal(setA, setB);
@@ -306,7 +317,7 @@ intset_equal(PG_FUNCTION_ARGS){
 
 //---------------------5----------------------//
 bool
-intset_intersection_internal(Intset *setA, Intset *setB)
+intset_intersection_internal(intSet *setA, intSet *setB)
 {
 	int			na,
 				nb;
@@ -315,8 +326,11 @@ intset_intersection_internal(Intset *setA, Intset *setB)
 	int		   *da,
 			   *db;
 
-	na = intset_cardinality_internal(setA);
-	nb = intset_cardinality_internal(setB);
+	intset_sort_internal(setA);
+	intset_sort_internal(setB);	
+
+	na = setA->length;
+	nb = setB->length;
 	da = setA->data;
 	db = setB->data;
 
@@ -338,8 +352,8 @@ PG_FUNCTION_INFO_V1(intset_intersection);
 
 Datum
 intset_intersection(PG_FUNCTION_ARGS){
-	Intset *setA = (Intset *) PG_GETARG_POINTER(0);
-	Intset *setB = (Intset *) PG_GETARG_POINTER(1);
+	intSet *setA = (intSet *) PG_GETARG_POINTER(0);
+	intSet *setB = (intSet *) PG_GETARG_POINTER(1);
 	bool res;
 	
 	res = intset_intersection_internal(setA, setB);
@@ -349,95 +363,32 @@ intset_intersection(PG_FUNCTION_ARGS){
 
 //---------------------------------------------//
 
-/*****************************************************************************
- * Operator class for defining B-tree index
- *
- * It's essential that the comparison operators and support function for a
- * B-tree index opclass always agree on the relative ordering of any two
- * data values.  Experience has shown that it's depressingly easy to write
- * unintentionally inconsistent functions.  One way to reduce the odds of
- * making a mistake is to make all the functions simple wrappers around
- * an internal three-way-comparison function, as we do here.
- *****************************************************************************/
+//----------------------6----------------------//
+/*
+intSet
+intset_union_internal(intSet *setA, intSet *setB){
 
-#define Mag(c)	((c)->x*(c)->x + (c)->y*(c)->y)
 
-static int
-complex_abs_cmp_internal(Complex * a, Complex * b)
-{
-	double		amag = Mag(a),
-				bmag = Mag(b);
-
-	if (amag < bmag)
-		return -1;
-	if (amag > bmag)
-		return 1;
-	return 0;
 }
 
-
-PG_FUNCTION_INFO_V1(complex_abs_lt);
+PG_FUNCTION_INFO_V1(intset_union);
 
 Datum
-complex_abs_lt(PG_FUNCTION_ARGS)
+intset_union(PG_FUNCTION_ARGS)
 {
-	Complex    *a = (Complex *) PG_GETARG_POINTER(0);
-	Complex    *b = (Complex *) PG_GETARG_POINTER(1);
+	intSet *setA = (intSet *) PG_GETARG_POINTER(0);
+	intSet *setB = (intSet *) PG_GETARG_POINTER(1);
+	intSet *result;
 
-	PG_RETURN_BOOL(complex_abs_cmp_internal(a, b) < 0);
+	//SORT(a);
+	//SORT(b);
+
+	result = intset_union_internal(setA, setB);
+
+	//pfree(a);
+	//pfree(b);
+
+	PG_RETURN_POINTER(result);
 }
+*/
 
-PG_FUNCTION_INFO_V1(complex_abs_le);
-
-Datum
-complex_abs_le(PG_FUNCTION_ARGS)
-{
-	Complex    *a = (Complex *) PG_GETARG_POINTER(0);
-	Complex    *b = (Complex *) PG_GETARG_POINTER(1);
-
-	PG_RETURN_BOOL(complex_abs_cmp_internal(a, b) <= 0);
-}
-
-PG_FUNCTION_INFO_V1(complex_abs_eq);
-
-Datum
-complex_abs_eq(PG_FUNCTION_ARGS)
-{
-	Complex    *a = (Complex *) PG_GETARG_POINTER(0);
-	Complex    *b = (Complex *) PG_GETARG_POINTER(1);
-
-	PG_RETURN_BOOL(complex_abs_cmp_internal(a, b) == 0);
-}
-
-PG_FUNCTION_INFO_V1(complex_abs_ge);
-
-Datum
-complex_abs_ge(PG_FUNCTION_ARGS)
-{
-	Complex    *a = (Complex *) PG_GETARG_POINTER(0);
-	Complex    *b = (Complex *) PG_GETARG_POINTER(1);
-
-	PG_RETURN_BOOL(complex_abs_cmp_internal(a, b) >= 0);
-}
-
-PG_FUNCTION_INFO_V1(complex_abs_gt);
-
-Datum
-complex_abs_gt(PG_FUNCTION_ARGS)
-{
-	Complex    *a = (Complex *) PG_GETARG_POINTER(0);
-	Complex    *b = (Complex *) PG_GETARG_POINTER(1);
-
-	PG_RETURN_BOOL(complex_abs_cmp_internal(a, b) > 0);
-}
-
-PG_FUNCTION_INFO_V1(complex_abs_cmp);
-
-Datum
-complex_abs_cmp(PG_FUNCTION_ARGS)
-{
-	Complex    *a = (Complex *) PG_GETARG_POINTER(0);
-	Complex    *b = (Complex *) PG_GETARG_POINTER(1);
-
-	PG_RETURN_INT32(complex_abs_cmp_internal(a, b));
-}
