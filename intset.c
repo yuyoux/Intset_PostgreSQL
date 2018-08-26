@@ -197,9 +197,10 @@ PG_FUNCTION_INFO_V1(intset_cardinality);
 Datum
 intset_cardinality(PG_FUNCTION_ARGS)
 {
+	int32 counter;
 	intSet *set = (intSet *) PG_GETARG_POINTER(0);
 	intset_sort_internal(set);
-	int32 counter = set->length;
+	counter = set->length;
 	PG_RETURN_INT32(counter);
 }
 //-------------------------------------------//
