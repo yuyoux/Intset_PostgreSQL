@@ -25,14 +25,14 @@ typedef struct Intset
  * Input/Output functions
  *****************************************************************************/
 
+ *****************************************************************************/
 PG_FUNCTION_INFO_V1(intset_in);
 
 Datum
 intset_in(PG_FUNCTION_ARGS)
 {
 	char	   *str = PG_GETARG_CSTRING(0);
-	Intset    *result;
-//------------------------------------------
+
 	int length=0;
 	int i,j=0;
 	int index =strlen(str);
@@ -57,6 +57,9 @@ intset_in(PG_FUNCTION_ARGS)
 	j=0;
 	int res[length];
 	memset(res,0,length);
+
+	
+	
 	token= strtok(temp,",");
 	if(temp[0]!='{')  printf("invalid input");        //check for '{'
 	token++;
@@ -71,9 +74,12 @@ intset_in(PG_FUNCTION_ARGS)
 	}
 	if(token==NULL) printf("invalid\n");          //check for '}'
 //----------------------------------------------------
-	result = (Intset *) palloc(sizeof(Intset));
+	intSet  *result =(intSet *)palloc(VARHDRSZ +length);
+	SET_VARSIZE(result,VARSIZE+length);
+
 	result->length = length;
-	result->daya = res;
+	memcpy(result->data,res,length);
+
 	PG_RETURN_POINTER(result);
 }
 
@@ -83,12 +89,19 @@ Datum
 intset_out(PG_FUNCTION_ARGS)
 {
 	Intset    *intset = (Intset *) PG_GETARG_POINTER(0);
-	char	   *result;
+	int	 i,offset=1;
 
-	result = psprintf("(%g,%g)", intset->x, intset->y);
-	PG_RETURN_CSTRING(result);
+
+	char out=[2*intset->length+2];
+	out[0]='{';
+	for(i =0;i< intset->length;i++) {
+		offset+=sprintf(out+offset,"%d,",res[i]);
+
+	}
+	sprintf(out+offset-1,"}\n\0,");
+
+	PG_RETURN_CSTRING(out);
 }
-
 
 
 /*****************************************************************************
