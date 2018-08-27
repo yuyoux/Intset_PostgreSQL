@@ -1,6 +1,10 @@
 #include "postgres.h"
 
 #include "fmgr.h"
+# include <stdio.h>
+# include <string.h>
+# include <stdlib.h>
+
 #include "libpq/pqformat.h"		/* needed for send/recv functions */
 
 PG_MODULE_MAGIC;
@@ -74,11 +78,11 @@ intset_in(PG_FUNCTION_ARGS)
 	if(token==NULL) printf("invalid\n");
 //----------------------------------------------------
 	
-	result =(intSet *)palloc(VARHDRSZ +length);
-	SET_VARSIZE(result,VARHDRSZ+length);
+	result =(intSet *)palloc(VARHDRSZ+VARHDRSZ*length);
+	SET_VARSIZE(result,VARHDRSZ+VARHDRSZ*length);
 
 	result->length = length;
-	memcpy(result->data,res,length);
+	memcpy(result->data,res,VARHDRSZ*length);
 
 	PG_RETURN_POINTER(result);
 }
@@ -92,20 +96,18 @@ intset_out(PG_FUNCTION_ARGS)
 	int	 i,offset=1;
 	char *out;
 	int *res = intset->data;
-	out = (char*)calloc(2*intset->length+2,sizeof(char));
+	out = (char*)calloc(2*intset->length+4,sizeof(char));
 	
 	out[0]='{';
+
 	for(i =0;i< intset->length;i++) {
-		psprintf(out+offset,"%d,",res[i]);
-		offset+=2;
+		offset+=sprintf(out+offset,"%d,",res[i]);
 
 	}
-	if (intset->length==0) psprintf(out+1,"}\n\0,");
-	else psprintf(out+offset-1,"}\n\0,");
-	
+	if (intset->length==0) sprintf(out+1,"}");
+	else sprintf(out+offset-1,"}");
 	PG_RETURN_CSTRING(out);
 }
-
 
 /*****************************************************************************
  * New Operators
