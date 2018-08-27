@@ -132,7 +132,7 @@ intset_out(PG_FUNCTION_ARGS)
 }
 **/
 
-//------------------1----------------------//
+//------------------1--------OK--------------//
 bool
 intset_contains_internal(int value, intSet *set)
 {
@@ -161,10 +161,10 @@ intset_contains(PG_FUNCTION_ARGS)
 
 //-------------------2---------------------//
 intSet
-intset_sort_internal(intSet *set) //sort the array and remove duplicated item
+intset_sort_internal(intSet *set) //sort the array
 {
 	int32 count = set->length;
-	int i,j,k=0,m=0;
+	int i,j;
 	for(i=0;i<count-1;i++){		//bubble sort
 		for(j=0;j<count-i;j++){
 			if(set->data[j]>set->data[j+1]){
@@ -183,7 +183,7 @@ intset_sort_internal(intSet *set) //sort the array and remove duplicated item
 			}
 		}
 	}*/
-	
+	/*
    	for (k=0; k<set->length-1; k++) //remove duplicated items & count
    	{
 		while (set->data[k] == set->data[k+1]) 
@@ -192,8 +192,8 @@ intset_sort_internal(intSet *set) //sort the array and remove duplicated item
 	        }
 		set->data[m++] = set->data[k];
 	}
-
-	set->length = m;
+	*/
+	//set->length = m;
 	return *set;
 }
 
@@ -211,19 +211,15 @@ intset_cardinality(PG_FUNCTION_ARGS)
 }
 //-------------------------------------------//
 
-//----------------------3--------------------//
-//referenced from _int_tool.c from intarray
-//arguments are assumed sorted & uniqueified
+//----------------------3----------OK----------//
+//referenced from _int_tool.c from build-in type intarray
+//sorted & uniqueified
 bool
 intset_containset_internal(intSet *setA, intSet *setB)
 {
-	int			na,
-				nb;
-	int			i,
-				j,
-				n;
-	int		   *da,
-			   *db;
+	int na, nb;
+	int i, j, n;
+	int *da, *db;
 	intset_sort_internal(setA);
 	intset_sort_internal(setB);	
 
@@ -267,17 +263,15 @@ intset_containset(PG_FUNCTION_ARGS)
 //------------------------------------------//
 
 
-//---------------------4--------------------//
-//referenced from _int_op.c from intarray
+//---------------------4----------OK----------//
+//referenced from _int_op.c from build-in type intarray
 bool
 intset_equal_internal(intSet *setA, intSet *setB)
 {
-	int			na,
-				nb;
-	int			n;
-	int		   *da,
-			   *db;
-	bool		result;
+	int na, nb;
+	int n;
+	int *da,*db;
+	bool result;
 
 	intset_sort_internal(setA);
 	intset_sort_internal(setB);	
@@ -322,16 +316,13 @@ intset_equal(PG_FUNCTION_ARGS){
 }
 //---------------------------------------------//
 
-//---------------------5----------------------//
+//---------------------5-------wrong---------------//
 bool
 intset_intersection_internal(intSet *setA, intSet *setB)
 {
-	int			na,
-				nb;
-	int			i,
-				j;
-	int		   *da,
-			   *db;
+	int na, nb;
+	int i, j;
+	int *da, *db;
 
 	intset_sort_internal(setA);
 	intset_sort_internal(setB);	
