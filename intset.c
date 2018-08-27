@@ -29,7 +29,12 @@ bool intset_intersection_internal(intSet *setA, intSet *setB);
 /*****************************************************************************
  * Input/Output functions
  *****************************************************************************/
-char  *str = PG_GETARG_CSTRING(0);
+PG_FUNCTION_INFO_V1(intset_in);
+
+Datum
+intset_in(PG_FUNCTION_ARGS)
+{
+	char  *str = PG_GETARG_CSTRING(0);
 
 	int length=0;
 	int i,j=0,k=0,m=0,t=0;
@@ -126,7 +131,7 @@ intset_out(PG_FUNCTION_ARGS)
 	int	 i,offset=1;
 	char *out;
 	int *res = (int*)palloc(intset->length);
-	res = VARDATA(intset);
+	res = intset->data;
 	
 	out = (char*)calloc(2*intset->length+1,sizeof(char));
 	
