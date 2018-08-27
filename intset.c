@@ -132,7 +132,7 @@ intset_out(PG_FUNCTION_ARGS)
 }
 **/
 
-//------------------1--------OK--------------//
+//------------------1----------------------//
 bool
 intset_contains_internal(int value, intSet *set)
 {
@@ -159,7 +159,7 @@ intset_contains(PG_FUNCTION_ARGS)
 }
 //-----------------------------------------//
 
-//-------------------2---------------------//
+//-------------------2----------OK-----------//
 intSet
 intset_sort_internal(intSet *set) //sort the array
 {
@@ -174,26 +174,7 @@ intset_sort_internal(intSet *set) //sort the array
 			}
 		}
 	}
-	/*for(k=0;k<set->length;k++){	//remove duplicated items & count
-		for(m=k+1;m<set->length;m++){
-			if(set->data[k] == set->data[m]){
-				set->data.splice(m,1);
-				m--;
-				c--;
-			}
-		}
-	}*/
-	/*
-   	for (k=0; k<set->length-1; k++) //remove duplicated items & count
-   	{
-		while (set->data[k] == set->data[k+1]) 
-		{
-			k++;
-	        }
-		set->data[m++] = set->data[k];
-	}
-	*/
-	//set->length = m;
+	
 	return *set;
 }
 
@@ -205,7 +186,7 @@ intset_cardinality(PG_FUNCTION_ARGS)
 {
 	int32 counter;
 	intSet *set = (intSet *) PG_GETARG_POINTER(0);
-	intset_sort_internal(set);
+	//intset_sort_internal(set);
 	counter = set->length;
 	PG_RETURN_INT32(counter);
 }
