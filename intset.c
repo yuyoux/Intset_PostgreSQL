@@ -369,7 +369,7 @@ intset_intersection(PG_FUNCTION_ARGS){
 //---------------------------------------------//
 
 //----------------------6----------------------//
-
+/*
 intSet
 intset_union_internal(intSet *setA, intSet *setB){
 	intset_sort_internal(setA);
@@ -410,6 +410,6 @@ intset_union(PG_FUNCTION_ARGS)
 
 	PG_RETURN_POINTER(result);
 }
-
+*/
 
 
