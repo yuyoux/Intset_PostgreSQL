@@ -76,9 +76,6 @@ create table DBSystems (
 -- data for user-defined types are just strings in the proper textual
 -- representation.
 
---INSERT INTO test_complex VALUES ('(1.0, 2.5)', '(4.2, 3.55 )');
---INSERT INTO test_complex VALUES ('(33.0, 51.4)', '(100.42, 93.55)');
-
 insert into Features (id, name) values
     (1, 'well designed'),
     (2, 'efficient'),
@@ -91,6 +88,101 @@ insert into DBSystems (name, features) values
     ('PostgreSQL', '{1,2,3,4}');
 
 SELECT * FROM DBSystems;
+
+-----------------------------
+-- Creating an operator for the new type:
+--	Let's define an add operator for complex types. Since POSTGRES
+--	supports function overloading, we'll use + as the add operator.
+--	(Operator names can be reused with different numbers and types of
+--	arguments.)
+-----------------------------
+
+
+CREATE FUNCTION intset_contains(int, intSet)
+   RETURNS bool
+   AS '_OBJWD_/intset'
+   LANGUAGE C IMMUTABLE STRICT;
+
+-- we can now define the operator. We show a binary operator here but you
+-- can also define unary operators by omitting either of leftarg or rightarg.
+CREATE OPERATOR <@ (
+   leftarg = int,
+   rightarg = intSet,
+   procedure = intset_contains
+   -- commutator = <@
+);
+
+--select a.* from mySets a
+--where (1 <@ a.iset);
+
+-- first, define the required operators
+CREATE FUNCTION intset_cardinality(intSet) RETURNS int
+   AS '_OBJWD_/intset' LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION intset_containset(intSet, intSet) RETURNS bool
+   AS '_OBJWD_/intset' LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION intset_equal(intSet, intSet) RETURNS bool
+   AS '_OBJWD_/intset' LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION intset_intersection(intSet, intSet) RETURNS bool
+   AS '_OBJWD_/intset' LANGUAGE C IMMUTABLE STRICT;
+
+
+
+CREATE OPERATOR @ (
+   leftarg = intSet, procedure = intset_cardinality
+   -- commutator = @
+   -- restrict = scalarltsel, join = scalarltjoinsel
+);
+CREATE OPERATOR @> (
+   leftarg = intSet, rightarg = intSet, procedure = intset_containset,
+   commutator = <@
+   -- restrict = scalarltsel, join = scalarltjoinsel
+);
+CREATE OPERATOR = (
+   leftarg = intSet, rightarg = intSet, procedure = intset_equal,
+   commutator = = ,
+   -- leave out negator since we didn't create <> operator
+   -- negator = <> ,
+   restrict = eqsel, join = eqjoinsel
+);
+CREATE OPERATOR && (
+   leftarg = intSet, rightarg = intSet, procedure = intset_intersection,
+   commutator = &&& 
+   -- restrict = scalargtsel, join = scalargtjoinsel
+);
+
+
+
+
+-- now we can make the operator class
+-- CREATE OPERATOR CLASS intset_ops
+--    DEFAULT FOR TYPE intset USING btree AS
+--        OPERATOR        1       <@,
+--        OPERATOR        2       @,
+--        OPERATOR        3       @>,
+--        OPERATOR        4       =,
+--        OPERATOR        5       &&;
+
+--select a.*, b.* from mySets a, mySets b
+--where (b.iset @> a.iset) and a.id != b.id;
+
+--update mySets set iset = iset || '{5,6,7,8}' where id = 4;
+
+--select a.*, b.* from mySets a, mySets b
+--where (a.iset @> b.iset) and a.id < b.id;
+
+--select id, iset, (@iset) as card from mySets order by id;
+
+--select a.iset, b.iset, a.iset && b.iset
+--from mySets a, mySets b where a.id < b.id;
+
+--delete from mySets where iset @> '{1,2,3,4,5,6}';
+
+--select * from mySets;
+
+
 
 
 

@@ -4,7 +4,7 @@
 # include <stdio.h>
 # include <string.h>
 # include <stdlib.h>
-
+//<stdint.h>
 #include "libpq/pqformat.h"		/* needed for send/recv functions */
 
 PG_MODULE_MAGIC;
@@ -15,7 +15,7 @@ typedef struct intSet
 	int32	data[FLEXIBLE_ARRAY_MEMBER];
 } intSet;
 
-bool intset_contains_internal(intSet *set, int32 value);
+bool intset_contains_internal(int value, intSet *set);
 intSet intset_sort_internal(intSet *set);
 bool intset_containset_internal(intSet *setA, intSet *setB);
 bool intset_equal_internal(intSet *setA, intSet *setB);
@@ -109,6 +109,7 @@ intset_out(PG_FUNCTION_ARGS)
 	PG_RETURN_CSTRING(out);
 }
 
+
 /*****************************************************************************
  * New Operators
  *
@@ -133,9 +134,9 @@ intset_out(PG_FUNCTION_ARGS)
 
 //------------------1----------------------//
 bool
-intset_contains_internal(intSet *set, int32 value)
+intset_contains_internal(int value, intSet *set)
 {
-	int32 i = 0;
+	int i = 0;
 	for (i=0; i < set->length; ++i){
 		if (set->data[i] == value){
 			return true;
@@ -150,10 +151,10 @@ Datum
 intset_contains(PG_FUNCTION_ARGS)
 {
 	intSet *set = (intSet *) PG_GETARG_POINTER(0);
-	int32 value=0;
+	int value=0;
 	bool res;
 	
-	res = intset_contains_internal(set, value);
+	res = intset_contains_internal(value, set);
 	PG_RETURN_BOOL(res);
 }
 //-----------------------------------------//
@@ -379,17 +380,12 @@ intset_union_internal(intSet *setA, intSet *setB){
 	int i = 0;
 	int j = 0;
 	int k = 0;
-	intSet *r = NULL;
+	//intSet *r = NULL;
 	na = setA->length;
 	nb = setB->length;
+	int *c = new int (sizeof(int)*(na+nb));
 
-	if (na == 0 && nb == 0)
-		return new_intArrayType(0);
-	if (na)
-		r = copy_intArrayType(b);
-	if (nb)
-		r = copy_intArrayType(a);
-
+	
 	
 
 }
