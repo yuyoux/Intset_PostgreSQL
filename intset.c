@@ -132,7 +132,7 @@ intset_out(PG_FUNCTION_ARGS)
 }
 **/
 
-//------------------1----------------------//
+//------------------1------------OK----------//
 bool
 intset_contains_internal(int value, intSet *set)
 {
@@ -150,8 +150,9 @@ PG_FUNCTION_INFO_V1(intset_contains);
 Datum
 intset_contains(PG_FUNCTION_ARGS)
 {
-	intSet *set = (intSet *) PG_GETARG_POINTER(0);
-	int value=0;
+	int32 value = PG_GETARG_INT32(0);
+	intSet *set = (intSet *) PG_GETARG_POINTER(1);
+	
 	bool res;
 	
 	res = intset_contains_internal(value, set);
