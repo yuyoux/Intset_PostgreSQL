@@ -182,7 +182,7 @@ intset_sort_internal(intSet *set) //sort the array and remove duplicated item
 		}
 	}*/
 	
-   	for (k=0; k<set->length-1; k++) 
+   	for (k=0; k<set->length-1; k++) //remove duplicated items & count
    	{
 		while (set->data[k] == set->data[k+1]) 
 		{
@@ -370,10 +370,26 @@ intset_intersection(PG_FUNCTION_ARGS){
 
 //----------------------6----------------------//
 
-/*intSet
+intSet
 intset_union_internal(intSet *setA, intSet *setB){
 	intset_sort_internal(setA);
 	intset_sort_internal(setB);
+	
+	int i = 0;
+	int j = 0;
+	int k = 0;
+	intSet *r = NULL;
+	na = setA->length;
+	nb = setB->length;
+
+	if (na == 0 && nb == 0)
+		return new_intArrayType(0);
+	if (na)
+		r = copy_intArrayType(b);
+	if (nb)
+		r = copy_intArrayType(a);
+
+	
 
 }
 
@@ -386,8 +402,6 @@ intset_union(PG_FUNCTION_ARGS)
 	intSet *setB = (intSet *) PG_GETARG_POINTER(1);
 	intSet *result;
 
-	//SORT(a);
-	//SORT(b);
 
 	result = intset_union_internal(setA, setB);
 
@@ -395,7 +409,7 @@ intset_union(PG_FUNCTION_ARGS)
 	//pfree(b);
 
 	PG_RETURN_POINTER(result);
-}*/
+}
 
 
 
