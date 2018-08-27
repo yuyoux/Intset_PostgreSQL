@@ -29,46 +29,39 @@ bool intset_intersection_internal(intSet *setA, intSet *setB);
 /*****************************************************************************
  * Input/Output functions
  *****************************************************************************/
-PG_FUNCTION_INFO_V1(intset_in);
-
-Datum
-intset_in(PG_FUNCTION_ARGS)
-{
-	char  *str = PG_GETARG_CSTRING(0);
+char  *str = PG_GETARG_CSTRING(0);
 
 	int length=0;
-	int i,j=0;
+	int i,j=0,k=0,m=0,t=0;
 	int index =strlen(str);
 	
 	char *temp=malloc(index);
 	char *token;
 	int *res;
+	//int *distinct;
 	intSet  *result ;
 	
 	for(i =0;i<index;i++){                  //strip the whitespaces and count the nb of element 
 		if(str[i]!=' '){
-			if(str[i]==',') length++;
+			if(str[i]==',') length++;   //count fot ','
 			temp[j]=str[i];
 			j++;
 		}
 		temp[j]=0;
 	}
  
-	//printf("index: %d\n",strlen(temp));
          
 	if (length>=1) length++;
-	if (strlen(temp)==3) length =1;
-	//printf("length:%d\n",length);    
-    	
+	if (strlen(temp)==3) length =1; 
 	j=0;
 
-	res = (int*)calloc(length,sizeof(int));
+
+	res = (int*)calloc(length,VARHDRSZ);
 	token= strtok(temp,",");
 	if(temp[0]!='{')  printf("invalid input");        //check for '{'
 	token++;
-	while(token!=NULL){		     //get the value				
+	while(token!=NULL){		                  //get the value				
 		res[j]= atoi(token);
-		//printf("res-%d\n",res[j]);
 		j++;
 		if (token[strlen(token)-1]=='}') break;
 		
@@ -76,16 +69,53 @@ intset_in(PG_FUNCTION_ARGS)
 		
 	}
 	if(token==NULL) printf("invalid\n");
-//----------------------------------------------------
+
+
+	if(length==2){
+		if(res[0]==res[1]) m=1;
+		else if (res[0]>res[1]) {
+			t = res[0];
+			res[0]=res[1];
+			res[1]=t;
+		}
+	}
+	else{
+		for(i=0;i<length;i++){		//bubble sort
+			for(j=i+1;j<length;j++){
+				if(res[i]>res[j]){
+					t=res[i];
+					res[i]=res[j];
+					res[j]=t;
+				}
+			}
+		}
 	
-	result =(intSet *)palloc(VARHDRSZ+VARHDRSZ*length);
-	SET_VARSIZE(result,VARHDRSZ+VARHDRSZ*length);
+	   	for (k=0; k<=length-1; k++) //remove duplicated items & count
+	   	{
+			while (res[k] == res[k+1]) 
+			{
+				k++;
+			}
+			res[m++] = res[k];
+		}
+	}
+	//distinct = (int32*)calloc(m,VARHDRSZ);
+	//for(i=0;i<m;i++) {
+	//	distinct[i] = res[i];
+	//	printf("%d ",res[i]);
+	//}
+	
+	length =m;
+	i = length*VARHDRSZ;
+	result =(intSet *)palloc(VARHDRSZ+i);
+	SET_VARSIZE(result,VARHDRSZ+i);
 
 	result->length = length;
-	memcpy(result->data,res,VARHDRSZ*length);
-
+	//memcpy(result->data,distinct,i);
+	memcpy(result->data,res,i);
 	PG_RETURN_POINTER(result);
 }
+
 
 PG_FUNCTION_INFO_V1(intset_out);
 
@@ -95,20 +125,20 @@ intset_out(PG_FUNCTION_ARGS)
 	intSet    *intset = (intSet *) PG_GETARG_POINTER(0);
 	int	 i,offset=1;
 	char *out;
-	int *res = intset->data;
-	out = (char*)calloc(2*intset->length+4,sizeof(char));
+	int *res = (int*)palloc(intset->length);
+	res = VARDATA(intset);
 	
+	out = (char*)calloc(2*intset->length+1,sizeof(char));
+	
+	//offset+=sprintf(out,"%d,{",res[4]);
 	out[0]='{';
-
 	for(i =0;i< intset->length;i++) {
 		offset+=sprintf(out+offset,"%d,",res[i]);
-
 	}
 	if (intset->length==0) sprintf(out+1,"}");
 	else sprintf(out+offset-1,"}");
 	PG_RETURN_CSTRING(out);
 }
-
 
 /*****************************************************************************
  * New Operators
