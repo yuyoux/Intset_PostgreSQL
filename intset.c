@@ -30,7 +30,7 @@ PG_FUNCTION_INFO_V1(intset_in);
 Datum
 intset_in(PG_FUNCTION_ARGS)
 {
-	char	   *str = PG_GETARG_CSTRING(0);
+	char  *str = PG_GETARG_CSTRING(0);
 
 	int length=0;
 	int i,j=0;
@@ -52,16 +52,13 @@ intset_in(PG_FUNCTION_ARGS)
  
 	//printf("index: %d\n",strlen(temp));
          
-	if (length>1) length++;
+	if (length>=1) length++;
+	if (strlen(temp)==3) length =1;
 	//printf("length:%d\n",length);    
-    
+    	
 	j=0;
-	
-	//memset(res,0,length);
-	res = (int*)calloc(length,sizeof(int));
 
-	
-	
+	res = (int*)calloc(length,sizeof(int));
 	token= strtok(temp,",");
 	if(temp[0]!='{')  printf("invalid input");        //check for '{'
 	token++;
@@ -69,12 +66,12 @@ intset_in(PG_FUNCTION_ARGS)
 		res[j]= atoi(token);
 		//printf("res-%d\n",res[j]);
 		j++;
-		if (token[strlen(token)-1]=='}') {
-			//printf("ok\n");
-			break;}
-		token=strtok(NULL,",");			
+		if (token[strlen(token)-1]=='}') break;
+		
+		token=strtok(NULL,",");	
+		
 	}
-	if(token==NULL) printf("invalid\n");          //check for '}'
+	if(token==NULL) printf("invalid\n");
 //----------------------------------------------------
 	
 	result =(intSet *)palloc(VARHDRSZ +length);
@@ -96,14 +93,16 @@ intset_out(PG_FUNCTION_ARGS)
 	char *out;
 	int *res = intset->data;
 	out = (char*)calloc(2*intset->length+2,sizeof(char));
-	//memset(out,0,2*intset->length+2);
+	
 	out[0]='{';
 	for(i =0;i< intset->length;i++) {
-		offset+=sprintf(out+offset,"%d,",res[i]);
+		psprintf(out+offset,"%d,",res[i]);
+		offset+=2;
 
 	}
-	psprintf(out+offset-1,"}\n\0");
-
+	if (intset->length==0) psprintf(out+1,"}\n\0,");
+	else psprintf(out+offset-1,"}\n\0,");
+	
 	PG_RETURN_CSTRING(out);
 }
 
