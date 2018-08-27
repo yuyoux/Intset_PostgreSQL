@@ -7,6 +7,7 @@
 //<stdint.h>
 #include "libpq/pqformat.h"		/* needed for send/recv functions */
 
+
 PG_MODULE_MAGIC;
 
 typedef struct intSet
@@ -19,7 +20,7 @@ bool intset_contains_internal(int value, intSet *set);
 intSet intset_sort_internal(intSet *set);
 bool intset_containset_internal(intSet *setA, intSet *setB);
 bool intset_equal_internal(intSet *setA, intSet *setB);
-bool intset_intersection_internal(intSet *setA, intSet *setB);
+intSet* intset_intersection_internal(intSet *setA, intSet *setB);
 //intSet intset_union_internal(intSet *setA, intSet *setB);
 
 
@@ -145,7 +146,6 @@ intset_out(PG_FUNCTION_ARGS)
 	PG_RETURN_CSTRING(out);
 }
 
-
 /*****************************************************************************
  * New Operators
  *
@@ -231,7 +231,7 @@ intset_cardinality(PG_FUNCTION_ARGS)
 
 //----------------------3----------OK----------//
 //referenced from _int_tool.c from build-in type intarray
-//sorted & uniqueified
+//already sorted & uniqueified
 bool
 intset_containset_internal(intSet *setA, intSet *setB)
 {
@@ -303,8 +303,6 @@ intset_equal_internal(intSet *setA, intSet *setB)
 
 	if (na == nb)
 	{
-		//SORT(a);
-		//SORT(b);
 		result = TRUE;
 
 		for (n = 0; n < na; n++)
@@ -335,13 +333,13 @@ intset_equal(PG_FUNCTION_ARGS){
 //---------------------------------------------//
 
 //---------------------5-------wrong---------------//
-bool
+intSet*
 intset_intersection_internal(intSet *setA, intSet *setB)
-{
+{	
+	intSet  *r;
 	int na, nb;
-	int i, j;
-	int *da, *db;
-
+	int *da, *db, *dr;
+	int i, j, k;
 	intset_sort_internal(setA);
 	intset_sort_internal(setB);	
 
@@ -349,19 +347,55 @@ intset_intersection_internal(intSet *setA, intSet *setB)
 	nb = setB->length;
 	da = setA->data;
 	db = setB->data;
+	//if (na>nb){
+	r = (intSet *)palloc0(VARHDRSZ+VARHDRSZ*(nb+na));
+	//}
+	//if (nb>=na){
+	//	r = (intSet *)palloc0(VARHDRSZ+VARHDRSZ*(na));
+	//}
 
-	i = j = 0;
+	if (na == 0 || nb == 0){
+		//return new_intArrayType(0);
+		r->length=0;
+		//r->data = (int *)palloc0(VARHDRSZ+VARHDRSZ*r->length);
+		SET_VARSIZE(r,VARHDRSZ+VARHDRSZ*r->length);
+		return r;
+		}
+
+	//r->length = Min(na, nb);
+	dr = r->data;
+
+	i = j = k = 0;
 	while (i < na && j < nb)
 	{
 		if (da[i] < db[j])
 			i++;
 		else if (da[i] == db[j])
-			return TRUE;
+		{
+			if (k == 0 || dr[k - 1] != db[j])
+				dr[k++] = db[j];
+			i++;
+			j++;
+		}
 		else
 			j++;
 	}
 
-	return FALSE;
+	if (k == 0)
+	{
+		//pfree(r);
+		//return new_intArrayType(0);
+		r->length=0;
+		//r->data = (int *)palloc0(VARHDRSZ+VARHDRSZ*r->length);
+		SET_VARSIZE(r,VARHDRSZ+VARHDRSZ*r->length);
+		return r;
+	}
+	else
+		//return resize_intArrayType(r, k);
+		r->length = k;
+		//r->data = (int *) repalloc(r->data, VARHDRSZ+VARHDRSZ*r->length);
+		SET_VARSIZE(r,VARHDRSZ+VARHDRSZ*r->length);		
+		return r;
 }
 
 PG_FUNCTION_INFO_V1(intset_intersection);
@@ -370,10 +404,10 @@ Datum
 intset_intersection(PG_FUNCTION_ARGS){
 	intSet *setA = (intSet *) PG_GETARG_POINTER(0);
 	intSet *setB = (intSet *) PG_GETARG_POINTER(1);
-	bool res;
+	intSet *result;
 	
-	res = intset_intersection_internal(setA, setB);
-	PG_RETURN_BOOL(res);
+	result = intset_intersection_internal(setA, setB);
+	PG_RETURN_POINTER(result);
 
 }
 
@@ -381,7 +415,7 @@ intset_intersection(PG_FUNCTION_ARGS){
 
 //----------------------6----------------------//
 /*
-intSet
+intSet*
 intset_union_internal(intSet *setA, intSet *setB){
 	intset_sort_internal(setA);
 	intset_sort_internal(setB);

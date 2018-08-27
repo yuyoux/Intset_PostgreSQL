@@ -89,6 +89,14 @@ insert into DBSystems (name, features) values
 
 SELECT * FROM DBSystems;
 
+create table mySets (id integer primary key, iset intSet);
+
+insert into mySets values (1, '{1,2,3}');
+insert into mySets values (2, '{1,3,1,3,1}');
+insert into mySets values (3, '{3,4,5}');
+insert into mySets values (4, '{4,5}');
+select * from mySets;
+
 -----------------------------
 -- Creating an operator for the new type:
 --	Let's define an add operator for complex types. Since POSTGRES
@@ -125,13 +133,13 @@ CREATE FUNCTION intset_containset(intSet, intSet) RETURNS bool
 CREATE FUNCTION intset_equal(intSet, intSet) RETURNS bool
    AS '/srvr/z5143390/postgresql-10.4/src/tutorial/intset' LANGUAGE C IMMUTABLE STRICT;
 
-CREATE FUNCTION intset_intersection(intSet, intSet) RETURNS bool
+CREATE FUNCTION intset_intersection(intSet, intSet) RETURNS intSet
    AS '/srvr/z5143390/postgresql-10.4/src/tutorial/intset' LANGUAGE C IMMUTABLE STRICT;
 
 
 
 CREATE OPERATOR @ (
-   leftarg = intSet, procedure = intset_cardinality
+   rightarg = intSet, procedure = intset_cardinality
    -- commutator = @
    -- restrict = scalarltsel, join = scalarltjoinsel
 );
