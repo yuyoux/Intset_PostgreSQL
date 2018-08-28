@@ -509,9 +509,27 @@ intset_union(PG_FUNCTION_ARGS)
 //-------------------------7--------------------//
 //A !! B takes the set disjunction, and produces an intSet containing elements 
 //that are in A and not in B, or that are in B and not in A.
+/*intSet*
+intset_disjunction_internal(intSet *setA, intSet *setB){
+
+}
+
+PG_FUNCTION_INFO_V1(intset_disjunction);
+
+Datum
+intset_disjunction(PG_FUNCTION_ARGS)
+{
+	intSet *setA = (intSet *) PG_GETARG_POINTER(0);
+	intSet *setB = (intSet *) PG_GETARG_POINTER(1);
+	intSet *result;
 
 
-
+	result = intset_disjunction_internal(setA, setB);
+	//pfree(setA);
+	//pfree(setB);
+	PG_RETURN_POINTER(result);
+}
+*/
 //----------------------------------------------//
 
 
@@ -519,8 +537,27 @@ intset_union(PG_FUNCTION_ARGS)
 //------------------------8---------------------//
 //A - B takes the set difference, and produces an intSet containing elements that 
 //are in A and not in B. Note that this is not the same as A !! B.
+/*intSet*
+intset_difference_internal(intSet *setA, intSet *setB){
+
+}
+
+PG_FUNCTION_INFO_V1(intset_difference);
+
+Datum
+intset_difference(PG_FUNCTION_ARGS)
+{
+	intSet *setA = (intSet *) PG_GETARG_POINTER(0);
+	intSet *setB = (intSet *) PG_GETARG_POINTER(1);
+	intSet *result;
 
 
+	result = intset_difference_internal(setA, setB);
+	//pfree(setA);
+	//pfree(setB);
+	PG_RETURN_POINTER(result);
+}
+*/
 //----------------------------------------------//
 
 
