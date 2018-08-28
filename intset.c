@@ -21,7 +21,7 @@ intSet intset_sort_internal(intSet *set);
 bool intset_containset_internal(intSet *setA, intSet *setB);
 bool intset_equal_internal(intSet *setA, intSet *setB);
 intSet* intset_intersection_internal(intSet *setA, intSet *setB);
-//intSet intset_union_internal(intSet *setA, intSet *setB);
+intSet* intset_union_internal(intSet *setA, intSet *setB);
 
 
 
@@ -332,7 +332,7 @@ intset_equal(PG_FUNCTION_ARGS){
 }
 //---------------------------------------------//
 
-//---------------------5-------wrong---------------//
+//---------------------5-------need change---------------//
 intSet*
 intset_intersection_internal(intSet *setA, intSet *setB)
 {	
@@ -393,7 +393,7 @@ intset_intersection_internal(intSet *setA, intSet *setB)
 	else
 		//return resize_intArrayType(r, k);
 		r->length = k;
-		//r->data = (int *) repalloc(r->data, VARHDRSZ+VARHDRSZ*r->length);
+		//repalloc - resize
 		SET_VARSIZE(r,VARHDRSZ+VARHDRSZ*r->length);		
 		return r;
 }
@@ -407,29 +407,83 @@ intset_intersection(PG_FUNCTION_ARGS){
 	intSet *result;
 	
 	result = intset_intersection_internal(setA, setB);
+	//pfree(setA);
+	//pfree(setB);
 	PG_RETURN_POINTER(result);
 
 }
 
 //---------------------------------------------//
 
-//----------------------6----------------------//
-/*
+//----------------------6---------wrong-------------//
+
 intSet*
 intset_union_internal(intSet *setA, intSet *setB){
+	intSet  *r = NULL;
+	int na, nb;
+	int i, j;
+	int *da, *db, *dr;
 	intset_sort_internal(setA);
 	intset_sort_internal(setB);
 	
-	int i = 0;
-	int j = 0;
-	int k = 0;
-	//intSet *r = NULL;
 	na = setA->length;
 	nb = setB->length;
-	int *c = new int (sizeof(int)*(na+nb));
+	da = setA->data;
+	db = setB->data;
 
+	dr = r->data;
+
+	if (na == 0 && nb == 0)
+		r->length=0;
+		SET_VARSIZE(r,VARHDRSZ+VARHDRSZ*r->length);
+		return r;
+	if (na == 0)
+		//r = copy_intArrayType(b);
+		r->length=nb;
+		SET_VARSIZE(r,VARHDRSZ+VARHDRSZ*r->length);
+		memcpy(dr, db, nb * sizeof(int32));
+		return r;
+	if (nb == 0)
+		//r = copy_intArrayType(a);
+		r->length=na;
+		SET_VARSIZE(r,VARHDRSZ+VARHDRSZ*r->length);
+		memcpy(dr, da, na * sizeof(int32));
+		return r;
 	
-	
+	if (!r)
+	{	
+		//r = new_intArrayType(na + nb);
+		r = (intSet *)palloc0(VARHDRSZ+VARHDRSZ*(nb+na));
+		//dr = ARRPTR(r);
+
+		/* union */
+		i = j = 0;
+		while (i < na && j < nb)
+		{
+			if (da[i] == db[j])
+			{
+				*dr++ = da[i++];
+				j++;
+			}
+			else if (da[i] < db[j])
+				*dr++ = da[i++];
+			else
+				*dr++ = db[j++];
+		}
+
+		while (i < na)
+			*dr++ = da[i++];
+		while (j < nb)
+			*dr++ = db[j++];
+
+		//r = resize_intArrayType(r, dr - ARRPTR(r));
+		r->length = dr - r->data;
+		SET_VARSIZE(r,VARHDRSZ+VARHDRSZ*r->length);
+	}
+	//if (r->length > 1)		//REMOVE DUPLICATE
+	//	r = _int_unique(r);
+
+	return r;
 
 }
 
@@ -444,12 +498,29 @@ intset_union(PG_FUNCTION_ARGS)
 
 
 	result = intset_union_internal(setA, setB);
-
-	//pfree(a);
-	//pfree(b);
-
+	//pfree(setA);
+	//pfree(setB);
 	PG_RETURN_POINTER(result);
 }
-*/
+
+//----------------------------------------------//
+
+
+//-------------------------7--------------------//
+//A !! B takes the set disjunction, and produces an intSet containing elements 
+//that are in A and not in B, or that are in B and not in A.
+
+
+
+//----------------------------------------------//
+
+
+
+//------------------------8---------------------//
+//A - B takes the set difference, and produces an intSet containing elements that 
+//are in A and not in B. Note that this is not the same as A !! B.
+
+
+//----------------------------------------------//
 
 

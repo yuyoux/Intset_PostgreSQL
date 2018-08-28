@@ -136,6 +136,10 @@ CREATE FUNCTION intset_equal(intSet, intSet) RETURNS bool
 CREATE FUNCTION intset_intersection(intSet, intSet) RETURNS intSet
    AS '/srvr/z5143390/postgresql-10.4/src/tutorial/intset' LANGUAGE C IMMUTABLE STRICT;
 
+CREATE FUNCTION intset_union(intSet, intSet) RETURNS intSet
+   AS '/srvr/z5143390/postgresql-10.4/src/tutorial/intset' LANGUAGE C IMMUTABLE STRICT;
+
+
 
 
 CREATE OPERATOR @ (
@@ -160,7 +164,11 @@ CREATE OPERATOR && (
    commutator = &&& 
    -- restrict = scalargtsel, join = scalargtjoinsel
 );
-
+CREATE OPERATOR || (
+   leftarg = intSet, rightarg = intSet, procedure = intset_union
+   -- commutator = &&& 
+   -- restrict = scalargtsel, join = scalargtjoinsel
+);
 
 
 
@@ -171,7 +179,8 @@ CREATE OPERATOR && (
 --        OPERATOR        2       @,
 --        OPERATOR        3       @>,
 --        OPERATOR        4       =,
---        OPERATOR        5       &&;
+--        OPERATOR        5       &&,
+--	  OPERATOR	  6	  ||;
 
 --select a.*, b.* from mySets a, mySets b
 --where (b.iset @> a.iset) and a.id != b.id;
