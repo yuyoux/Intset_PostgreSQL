@@ -431,21 +431,24 @@ intset_union_internal(intSet *setA, intSet *setB){
 	da = setA->data;
 	db = setB->data;
 
-	dr = r->data;
+	
 
 	if (na == 0 && nb == 0)
 		r->length=0;
+		r = (intSet *)palloc0(VARHDRSZ+VARHDRSZ*(nb+na));
 		SET_VARSIZE(r,VARHDRSZ+VARHDRSZ*r->length);
 		return r;
 	if (na == 0)
 		//r = copy_intArrayType(b);
 		r->length=nb;
+		r = (intSet *)palloc0(VARHDRSZ+VARHDRSZ*(nb));
 		SET_VARSIZE(r,VARHDRSZ+VARHDRSZ*r->length);
 		memcpy(dr, db, nb * sizeof(int32));
 		return r;
 	if (nb == 0)
 		//r = copy_intArrayType(a);
 		r->length=na;
+		r = (intSet *)palloc0(VARHDRSZ+VARHDRSZ*(na));
 		SET_VARSIZE(r,VARHDRSZ+VARHDRSZ*r->length);
 		memcpy(dr, da, na * sizeof(int32));
 		return r;
@@ -454,6 +457,7 @@ intset_union_internal(intSet *setA, intSet *setB){
 	{	
 		//r = new_intArrayType(na + nb);
 		r = (intSet *)palloc0(VARHDRSZ+VARHDRSZ*(nb+na));
+		dr = r->data;
 		//dr = ARRPTR(r);
 
 		/* union */
