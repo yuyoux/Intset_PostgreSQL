@@ -199,13 +199,13 @@ intSet
 intset_sort_internal(intSet *set) //sort the array
 {
 	int32 count = set->length;
-	int i,j;
-	for(i=0;i<count-1;i++){		//bubble sort
-		for(j=0;j<count-i;j++){
+	int i,j,t;
+	for(i=0;i<count;i++){		//bubble sort
+		for(j=i+1;j<count;j++){
 			if(set->data[j]>set->data[j+1]){
-				int32 temp=set->data[j];
+				t=set->data[j];
 				set->data[j]=set->data[j+1];
-				set->data[j+1]=temp;
+				set->data[j+1]=t;
 			}
 		}
 	}
@@ -236,8 +236,8 @@ intset_containset_internal(intSet *setA, intSet *setB)
 	int na, nb;
 	int i, j, n;
 	int *da, *db;
-	intset_sort_internal(setA);
-	intset_sort_internal(setB);	
+	//intset_sort_internal(setA);
+	//intset_sort_internal(setB);	
 
 	na = setA->length;
 	nb = setB->length;
@@ -289,8 +289,8 @@ intset_equal_internal(intSet *setA, intSet *setB)
 	int *da,*db;
 	bool result;
 
-	intset_sort_internal(setA);
-	intset_sort_internal(setB);	
+	//intset_sort_internal(setA);
+	//intset_sort_internal(setB);	
 
 	na = setA->length;
 	nb = setB->length;
@@ -432,8 +432,8 @@ intset_union_internal(intSet *setA, intSet *setB){
 	int na, nb;
 	int i, j,k;
 	int *da, *db, *dr;
-	intset_sort_internal(setA);
-	intset_sort_internal(setB);
+	//intset_sort_internal(setA);
+	//intset_sort_internal(setB);
 	
 	na = setA->length;
 	nb = setB->length;
@@ -477,7 +477,8 @@ intset_union_internal(intSet *setA, intSet *setB){
 			dr[k++] = db[j++];
 
 		r = (intSet *)palloc(VARHDRSZ+VARHDRSZ*k);
-		SET_VARSIZE(r,VARHDRSZ+VARHDRSZ*k);
+		r->length = k;
+		SET_VARSIZE(r,VARHDRSZ+VARHDRSZ*r->length);
 		r->length = k;
 		memcpy(r->data,dr,k*VARHDRSZ);
 	}
@@ -501,7 +502,6 @@ intset_union(PG_FUNCTION_ARGS)
 	//pfree(setB);
 	PG_RETURN_POINTER(result);
 }
-
 //----------------------------------------------//
 
 
