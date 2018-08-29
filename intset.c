@@ -430,7 +430,7 @@ intSet*
 intset_union_internal(intSet *setA, intSet *setB){
 	intSet  *r = NULL;
 	int na, nb;
-	int i, j;
+	int i, j,k;
 	int *da, *db, *dr;
 	intset_sort_internal(setA);
 	intset_sort_internal(setB);
