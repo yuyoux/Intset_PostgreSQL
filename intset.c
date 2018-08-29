@@ -330,7 +330,7 @@ intset_equal(PG_FUNCTION_ARGS){
 }
 //---------------------------------------------//
 
-//---------------------5-------need change---------------//
+//---------------------5-------OK---------------//
 intSet*
 intset_intersection_internal(intSet *setA, intSet *setB)
 {	
@@ -346,20 +346,21 @@ intset_intersection_internal(intSet *setA, intSet *setB)
 	da = setA->data;
 	db = setB->data;
 	//if (na>nb){
-	r = (intSet *)palloc0(VARHDRSZ+na+nb);
+	
 	//}else{
 	//r = (intSet *)palloc0(VARHDRSZ+na);
 	//}
 
 	if (na == 0 || nb == 0){
 		//return new_intArrayType(0);
+		r = (intSet *)palloc(VARHDRSZ);
 		r->length=0;
 		SET_VARSIZE(r,r->length);
 		return r;
 		}
 
 	//r->length = Min(na, nb);
-	dr = r->data;
+	dr = (int*)calloc(na+nb,sizeof(int));
 
 	i = j = k = 0;
 	while (i < na && j < nb)
@@ -381,15 +382,27 @@ intset_intersection_internal(intSet *setA, intSet *setB)
 	{
 		//pfree(r);
 		//return new_intArrayType(0);
+		r = (intSet *)palloc(VARHDRSZ);
 		r->length=0;
 		SET_VARSIZE(r,r->length);
+		//r->length=0;
 		return r;
 	}
 	else
 		//return resize_intArrayType(r, k);
+		r = (intSet *)palloc(VARHDRSZ+k*VARHDRSZ);
+		
+		//r = (intSet *) repalloc(r, k);
+		dr = realloc(dr,k);
 		r->length = k;
-		r = (intSet *) repalloc(r, k);
-		SET_VARSIZE(r, k);		
+		SET_VARSIZE(r, VARHDRSZ+k*VARHDRSZ);
+		r->length = k;
+		memcpy(r->data,dr,k*VARHDRSZ);
+			
+		//ereport(ERROR,
+		//		(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+		//		 errmsg("invalid input syntax for complex: \"%d,%d,%d\"",
+		//				dr[2],k,r->length)));	
 		return r;
 }
 
@@ -402,6 +415,7 @@ intset_intersection(PG_FUNCTION_ARGS){
 	intSet *result;
 	
 	result = intset_intersection_internal(setA, setB);
+	
 	//pfree(setA);
 	//pfree(setB);
 	PG_RETURN_POINTER(result);
