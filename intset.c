@@ -4,7 +4,6 @@
 # include <stdio.h>
 # include <string.h>
 # include <stdlib.h>
-//<stdint.h>
 #include "libpq/pqformat.h"		/* needed for send/recv functions */
 
 
@@ -160,7 +159,6 @@ intset_out(PG_FUNCTION_ARGS)
 	Complex    *a = (Complex *) PG_GETARG_POINTER(0);
 	Complex    *b = (Complex *) PG_GETARG_POINTER(1);
 	Complex    *result;
-
 	result = (Complex *) palloc(sizeof(Complex));
 	result->x = a->x + b->x;
 	result->y = a->y + b->y;
@@ -258,7 +256,7 @@ intset_containset_internal(intSet *setA, intSet *setB)
 			j++;
 		}
 		else
-			break;	/* db[j] is not in da */
+			break;	
 	}
 
 	return (n == nb) ? TRUE : FALSE;
@@ -340,25 +338,23 @@ intset_intersection_internal(intSet *setA, intSet *setB)
 	int na, nb;
 	int *da, *db, *dr;
 	int i, j, k;
-	intset_sort_internal(setA);
-	intset_sort_internal(setB);	
+	//intset_sort_internal(setA);
+	//intset_sort_internal(setB);	
 
 	na = setA->length;
 	nb = setB->length;
 	da = setA->data;
 	db = setB->data;
 	//if (na>nb){
-	r = (intSet *)palloc0(VARHDRSZ+VARHDRSZ*(nb+na));
-	//}
-	//if (nb>=na){
-	//	r = (intSet *)palloc0(VARHDRSZ+VARHDRSZ*(na));
+	r = (intSet *)palloc0(VARHDRSZ+na+nb);
+	//}else{
+	//r = (intSet *)palloc0(VARHDRSZ+na);
 	//}
 
 	if (na == 0 || nb == 0){
 		//return new_intArrayType(0);
 		r->length=0;
-		//r->data = (int *)palloc0(VARHDRSZ+VARHDRSZ*r->length);
-		SET_VARSIZE(r,VARHDRSZ+VARHDRSZ*r->length);
+		SET_VARSIZE(r,r->length);
 		return r;
 		}
 
@@ -386,15 +382,14 @@ intset_intersection_internal(intSet *setA, intSet *setB)
 		//pfree(r);
 		//return new_intArrayType(0);
 		r->length=0;
-		//r->data = (int *)palloc0(VARHDRSZ+VARHDRSZ*r->length);
-		SET_VARSIZE(r,VARHDRSZ+VARHDRSZ*r->length);
+		SET_VARSIZE(r,r->length);
 		return r;
 	}
 	else
 		//return resize_intArrayType(r, k);
 		r->length = k;
-		//repalloc - resize
-		SET_VARSIZE(r,VARHDRSZ+VARHDRSZ*r->length);		
+		r = (intSet *) repalloc(r, k);
+		SET_VARSIZE(r, k);		
 		return r;
 }
 
@@ -430,8 +425,6 @@ intset_union_internal(intSet *setA, intSet *setB){
 	nb = setB->length;
 	da = setA->data;
 	db = setB->data;
-
-	
 
 	if (na == 0 && nb == 0)
 		r->length=0;
@@ -516,18 +509,15 @@ intset_union(PG_FUNCTION_ARGS)
 /*intSet*
 intset_disjunction_internal(intSet *setA, intSet *setB){
 
+
 }
-
 PG_FUNCTION_INFO_V1(intset_disjunction);
-
 Datum
 intset_disjunction(PG_FUNCTION_ARGS)
 {
 	intSet *setA = (intSet *) PG_GETARG_POINTER(0);
 	intSet *setB = (intSet *) PG_GETARG_POINTER(1);
 	intSet *result;
-
-
 	result = intset_disjunction_internal(setA, setB);
 	//pfree(setA);
 	//pfree(setB);
@@ -544,18 +534,16 @@ intset_disjunction(PG_FUNCTION_ARGS)
 /*intSet*
 intset_difference_internal(intSet *setA, intSet *setB){
 
+
+
 }
-
 PG_FUNCTION_INFO_V1(intset_difference);
-
 Datum
 intset_difference(PG_FUNCTION_ARGS)
 {
 	intSet *setA = (intSet *) PG_GETARG_POINTER(0);
 	intSet *setB = (intSet *) PG_GETARG_POINTER(1);
 	intSet *result;
-
-
 	result = intset_difference_internal(setA, setB);
 	//pfree(setA);
 	//pfree(setB);
@@ -563,5 +551,4 @@ intset_difference(PG_FUNCTION_ARGS)
 }
 */
 //----------------------------------------------//
-
 
