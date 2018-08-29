@@ -115,7 +115,6 @@ intset_in(PG_FUNCTION_ARGS)
 	result =(intSet *)palloc(VARHDRSZ+length*VARHDRSZ);
 	SET_VARSIZE(result,VARHDRSZ+length*VARHDRSZ);
 
-	result->length = length;
 	memcpy(result->data,distinct,length*VARHDRSZ);
 	//memcpy(result->data,res,i);
 	PG_RETURN_POINTER(result);
@@ -354,8 +353,7 @@ intset_intersection_internal(intSet *setA, intSet *setB)
 	if (na == 0 || nb == 0){
 		//return new_intArrayType(0);
 		r = (intSet *)palloc(VARHDRSZ);
-		r->length=0;
-		SET_VARSIZE(r,r->length);
+		SET_VARSIZE(r,0);
 		return r;
 		}
 
@@ -383,8 +381,7 @@ intset_intersection_internal(intSet *setA, intSet *setB)
 		//pfree(r);
 		//return new_intArrayType(0);
 		r = (intSet *)palloc(VARHDRSZ);
-		r->length=0;
-		SET_VARSIZE(r,r->length);
+		SET_VARSIZE(r,0);
 		//r->length=0;
 		return r;
 	}
@@ -394,9 +391,7 @@ intset_intersection_internal(intSet *setA, intSet *setB)
 		
 		//r = (intSet *) repalloc(r, k);
 		dr = realloc(dr,k);
-		r->length = k;
 		SET_VARSIZE(r, VARHDRSZ+k*VARHDRSZ);
-		r->length = k;
 		memcpy(r->data,dr,k*VARHDRSZ);
 			
 		//ereport(ERROR,
@@ -442,8 +437,7 @@ intset_union_internal(intSet *setA, intSet *setB){
 
 	if (na == 0 && nb == 0){
 		r = (intSet *)palloc(VARHDRSZ);
-		r->length=0;
-		SET_VARSIZE(r,r->length);
+		SET_VARSIZE(r,0);
 		return r;
 	}
 	else if (na == 0)
@@ -477,9 +471,7 @@ intset_union_internal(intSet *setA, intSet *setB){
 			dr[k++] = db[j++];
 
 		r = (intSet *)palloc(VARHDRSZ+VARHDRSZ*k);
-		r->length = k;
-		SET_VARSIZE(r,VARHDRSZ+VARHDRSZ*r->length);
-		//r->length = k;
+		SET_VARSIZE(r,VARHDRSZ+VARHDRSZ*k);
 		memcpy(r->data,dr,k*VARHDRSZ);
 	}
 	//if (r->length > 1)		//REMOVE DUPLICATE
