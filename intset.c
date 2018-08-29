@@ -477,8 +477,8 @@ intset_union_internal(intSet *setA, intSet *setB){
 			dr[k++] = db[j++];
 
 		r = (intSet *)palloc(VARHDRSZ+VARHDRSZ*k);
+		SET_VARSIZE(r,VARHDRSZ+VARHDRSZ*k);
 		r->length = k;
-		SET_VARSIZE(r,VARHDRSZ+VARHDRSZ*r->length);
 		memcpy(r->data,dr,k*VARHDRSZ);
 	}
 	//if (r->length > 1)		//REMOVE DUPLICATE
