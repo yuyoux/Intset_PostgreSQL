@@ -440,62 +440,51 @@ intset_union_internal(intSet *setA, intSet *setB){
 	da = setA->data;
 	db = setB->data;
 
-	if (na == 0 && nb == 0)
+	if (na == 0 && nb == 0){
+		r = (intSet *)palloc(VARHDRSZ);
 		r->length=0;
-		r = (intSet *)palloc0(VARHDRSZ+VARHDRSZ*(nb+na));
-		SET_VARSIZE(r,VARHDRSZ+VARHDRSZ*r->length);
+		SET_VARSIZE(r,r->length);
 		return r;
-	if (na == 0)
-		//r = copy_intArrayType(b);
-		r->length=nb;
-		r = (intSet *)palloc0(VARHDRSZ+VARHDRSZ*(nb));
-		SET_VARSIZE(r,VARHDRSZ+VARHDRSZ*r->length);
-		memcpy(dr, db, nb * sizeof(int32));
-		return r;
-	if (nb == 0)
-		//r = copy_intArrayType(a);
-		r->length=na;
-		r = (intSet *)palloc0(VARHDRSZ+VARHDRSZ*(na));
-		SET_VARSIZE(r,VARHDRSZ+VARHDRSZ*r->length);
-		memcpy(dr, da, na * sizeof(int32));
-		return r;
+	}
+	else if (na == 0)
+		return setB;
+			
+	else if (nb == 0)
+		return setB;
 	
-	if (!r)
+	else
 	{	
-		//r = new_intArrayType(na + nb);
-		r = (intSet *)palloc0(VARHDRSZ+VARHDRSZ*(nb+na));
-		dr = r->data;
-		//dr = ARRPTR(r);
-
+		dr = (int*)calloc(na+nb,sizeof(int));
+		
 		/* union */
-		i = j = 0;
+		i = j =k= 0;
 		while (i < na && j < nb)
 		{
 			if (da[i] == db[j])
 			{
-				*dr++ = da[i++];
+				dr[k++] = da[i++];
 				j++;
 			}
 			else if (da[i] < db[j])
-				*dr++ = da[i++];
+				dr[k++] = da[i++];
 			else
-				*dr++ = db[j++];
+				dr[k++] = db[j++];
 		}
 
 		while (i < na)
-			*dr++ = da[i++];
+			dr[k++] = da[i++];
 		while (j < nb)
-			*dr++ = db[j++];
+			dr[k++] = db[j++];
 
-		//r = resize_intArrayType(r, dr - ARRPTR(r));
-		r->length = dr - r->data;
+		r = (intSet *)palloc(VARHDRSZ+VARHDRSZ*k);
+		r->length = k;
 		SET_VARSIZE(r,VARHDRSZ+VARHDRSZ*r->length);
+		memcpy(r->data,dr,k*VARHDRSZ);
 	}
 	//if (r->length > 1)		//REMOVE DUPLICATE
 	//	r = _int_unique(r);
 
 	return r;
-
 }
 
 PG_FUNCTION_INFO_V1(intset_union);
@@ -506,7 +495,6 @@ intset_union(PG_FUNCTION_ARGS)
 	intSet *setA = (intSet *) PG_GETARG_POINTER(0);
 	intSet *setB = (intSet *) PG_GETARG_POINTER(1);
 	intSet *result;
-
 
 	result = intset_union_internal(setA, setB);
 	//pfree(setA);
