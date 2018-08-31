@@ -143,6 +143,12 @@ CREATE FUNCTION intset_intersection(intSet, intSet) RETURNS intSet
 CREATE FUNCTION intset_union(intSet, intSet) RETURNS intSet
    AS '_OBJWD_/intset' LANGUAGE C IMMUTABLE STRICT;
 
+CREATE FUNCTION intset_difference(intSet, intSet) RETURNS intSet
+   AS '_OBJWD_/intset' LANGUAGE C IMMUTABLE STRICT;
+
+--CREATE FUNCTION intset_disjunction(intSet, intSet) RETURNS intSet
+--   AS '_OBJWD_/intset' LANGUAGE C IMMUTABLE STRICT;
+
 
 
 
@@ -173,8 +179,16 @@ CREATE OPERATOR || (
    -- commutator = &&& 
    -- restrict = scalargtsel, join = scalargtjoinsel
 );
-
-
+CREATE OPERATOR - (
+   leftarg = intSet, rightarg = intSet, procedure = intset_difference
+   -- commutator = -- 
+   -- restrict = scalargtsel, join = scalargtjoinsel
+);
+--CREATE OPERATOR !! (
+--   leftarg = intSet, rightarg = intSet, procedure = intset_disjunction
+   -- commutator = -- 
+   -- restrict = scalargtsel, join = scalargtjoinsel
+--);
 
 -- now we can make the operator class
 -- CREATE OPERATOR CLASS intset_ops
@@ -185,6 +199,8 @@ CREATE OPERATOR || (
 --        OPERATOR        4       =,
 --        OPERATOR        5       &&,
 --	  OPERATOR	  6	  ||;
+--	  OPERATOR	  8	  -;
+--	  OPERATOR	  7	  !!;
 
 --select a.*, b.* from mySets a, mySets b
 --where (b.iset @> a.iset) and a.id != b.id;
