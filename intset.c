@@ -44,8 +44,10 @@ intset_in(PG_FUNCTION_ARGS)
 	
 	char *temp=malloc(index);
 	char *token;
+	//char *out;
 	int *res;
-	int *distinct;
+	//int offset=1;
+	//int *distinct;
 	intSet  *result ;
 	
 	for(i =0;i<index;i++){                  //strip the whitespaces and count the nb of element 
@@ -107,19 +109,14 @@ intset_in(PG_FUNCTION_ARGS)
 			res[m++] = res[k];
 		}
 	}
-	distinct = (int*)calloc(m,VARHDRSZ);
-	for(i=0;i<m;i++) {
-		distinct[i] = res[i];
-		//printf("%d ",res[i]);
-	}
 	
 	length =m;
-	result =(intSet *)palloc(VARHDRSZ+length*VARHDRSZ);
-	SET_VARSIZE(result,VARHDRSZ+length*VARHDRSZ);
-
-	result->length = length;
-	memcpy(result->data,distinct,length*VARHDRSZ);
-	//memcpy(result->data,res,i);
+	result =(intSet *)palloc(VARHDRSZ+m*sizeof(int32));
+	
+	SET_VARSIZE(result,VARHDRSZ+m*sizeof(int32));
+		
+	memcpy((void*)VARDATA(result),res,VARSIZE(result)-VARHDRSZ);
+	
 	PG_RETURN_POINTER(result);
 }
 
@@ -130,22 +127,33 @@ Datum
 intset_out(PG_FUNCTION_ARGS)
 {
 	intSet    *intset = (intSet *) PG_GETARG_POINTER(0);
-	int	 i,offset=1;
+	int	 i,offset=1,length=0;
 	char *out;
 	//int *res = (int*)palloc(intset->length);
-	int *res = intset->data;
+	int *res = (int*)VARDATA(intset);
+	length = VARSIZE_ANY_EXHDR(intset)/4;
+
 	
-	out = (char*)calloc(2*intset->length+1,sizeof(char));
+	if(length==0) out = (char*)calloc(2,sizeof(char));
+	else out = (char*)calloc(2*length+1,sizeof(char));
 	
 	//offset+=sprintf(out,"%d,{",res[4]);
 	out[0]='{';
-	for(i =0;i< intset->length;i++) {
+	for(i =0;i< length;i++) {
 		offset+=sprintf(out+offset,"%d,",res[i]);
 	}
-	if (intset->length==0) sprintf(out+1,"}");
+	
+	if (length==0) sprintf(out+1,"}");
 	else sprintf(out+offset-1,"}");
+/*
+	ereport(ERROR,
+				(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+				 errmsg("invalid input syntax for complex: \"%s",
+						out)));*/
+	
 	PG_RETURN_CSTRING(out);
 }
+
 
 /*****************************************************************************
  * New Operators
@@ -430,25 +438,23 @@ intset_intersection(PG_FUNCTION_ARGS){
 
 intSet*
 intset_union_internal(intSet *setA, intSet *setB){
-	intSet *r;
-	intSet *q;
+	intSet  *r = NULL;
 	int na, nb;
 	int i, j,k;
-	int *da, *db, *dr;
-	int32 arg_size;
+	int *da, *db,*dr;
 	//intset_sort_internal(setA);
 	//intset_sort_internal(setB);
 	
-	na = setA->length;
-	nb = setB->length;
-	da = setA->data;
-	db = setB->data;
+	na = VARSIZE_ANY_EXHDR(setA)/4;
+	nb = VARSIZE_ANY_EXHDR(setB)/4;
+		
+	//da = setA->data;
+	//db = setB->data;
+	da =(int*) VARDATA(setA);
+	db = (int*)VARDATA(setB);
 
 	if (na == 0 && nb == 0){
-		r = (intSet *)palloc(VARHDRSZ);
-		r->length=0;
-		SET_VARSIZE(r,0);
-		return r;
+		return setA;
 	}
 	else if (na == 0)
 		return setB;
@@ -458,10 +464,7 @@ intset_union_internal(intSet *setA, intSet *setB){
 	
 	else
 	{	
-		//int i, j,k;
-		r = (intSet*)palloc(VARSIZE_ANY_EXHDR(setA)+VARSIZE_ANY_EXHDR(setB)+VARHDRSZ);
 		dr = (int*)calloc(na+nb,sizeof(int));
-		
 		
 		/* union */
 		i = j =k= 0;
@@ -483,31 +486,14 @@ intset_union_internal(intSet *setA, intSet *setB){
 		while (j < nb)
 			dr[k++] = db[j++];
 
-		//ereport(ERROR,
-		//		(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-		//		 errmsg("invalid input syntax for complex: \"%d\n",
-		//		 r->length)));
-		
-		dr = realloc(dr,k);
-		memcpy(r->data,dr,k);
+		r = (intSet *)palloc(VARHDRSZ+sizeof(int32)*k);
+	
+		SET_VARSIZE(r,VARHDRSZ+sizeof(int32)*k);
 
-		arg_size = VARSIZE_ANY_EXHDR(r);
-		q = (intSet *)palloc(VARHDRSZ+arg_size);
-		
-		SET_VARSIZE(q,VARHDRSZ+arg_size);
-		//r->length = k;
-		
-		
-		memcpy((void *)VARDATA(q),(void *)VARDATA_ANY(r),arg_size);
-		//ereport(ERROR,
-		//		(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-		//		 errmsg("invalid input syntax for complex: \"%d\n",
-		//		 r->length)));
+			
+		memcpy(r->data,dr,k*sizeof(int32));
 	}
-	//if (r->length > 1)		//REMOVE DUPLICATE
-	//	r = _int_unique(r);
-
-	return q;
+	return r;
 }
 
 PG_FUNCTION_INFO_V1(intset_union);
