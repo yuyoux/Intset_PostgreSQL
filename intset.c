@@ -180,17 +180,17 @@ intset_out(PG_FUNCTION_ARGS)
 
 /*****************************************************************************
  * New Operators
- *
- * A practical Complex datatype would provide much more than this, of course.
  *****************************************************************************/
-//------------------1------------OK----------//
+
+//i <@ S  intSet set contains the integer value; that is, value ∈ set.
 bool
 intset_contains_internal(int value, intSet *set)
 {
 	int i = 0;
+	int* data = (int*)VARDATA(set);
 	int count = VARSIZE_ANY_EXHDR(set)/4;
 	for (i=0; i < count; ++i){
-		if (set->data[i] == value){
+		if (data[i] == value){
 			return true;
 		}
 	}
@@ -208,8 +208,8 @@ intset_contains(PG_FUNCTION_ARGS)
 	res = intset_contains_internal(value, set);
 	PG_RETURN_BOOL(res);
 }
-//-----------------------------------------//
-//-------------------2----------OK-----------//
+
+//@ S  give the cardinality, or number of distinct elements in, intSet S; that is, |S|.
 intSet
 intset_sort_internal(intSet *set) //sort the array
 {
@@ -239,9 +239,8 @@ intset_cardinality(PG_FUNCTION_ARGS)
 	counter = VARSIZE_ANY_EXHDR(set)/4;
 	PG_RETURN_INT32(counter);
 }
-//-------------------------------------------//
 
-//----------------------3----------OK----------//
+//A @> B    does intSet A contain only values in intSet B? that is, for every element of A, is it an element of B? (A⊂B)
 //referenced from _int_tool.c from build-in type intarray
 //already sorted & uniqueified
 bool
@@ -286,10 +285,9 @@ intset_containset(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(res);
 }
 
-//------------------------------------------//
 
-
-//---------------------4----------OK----------//
+//A = B   intSets A and B are equal; that is, intSet A contains all the values of intSet B and intSet B contains all the 
+//values of intSet A, or, every element in A can be found in B, and vice versa.
 //referenced from _int_op.c from build-in type intarray
 bool
 intset_equal_internal(intSet *setA, intSet *setB)
@@ -334,9 +332,9 @@ intset_equal(PG_FUNCTION_ARGS){
 	PG_RETURN_BOOL(res);
 
 }
-//---------------------------------------------//
 
-//---------------------5-------OK---------------//
+
+//A && B  takes the set intersection, and produces an intSet containing the elements common to A and B; that is, A∩B.
 intSet*
 intset_intersection_internal(intSet *setA, intSet *setB)
 {	
@@ -396,17 +394,15 @@ intset_intersection(PG_FUNCTION_ARGS){
 	intSet *result;
 	
 	result = intset_intersection_internal(setA, setB);
-	
-	//pfree(setA);
-	//pfree(setB);
+	pfree(setA);
+	pfree(setB);
 	PG_RETURN_POINTER(result);
 
 }
 
-//---------------------------------------------//
 
-//----------------------6---------OK-------------//
 
+//A || B  takes the set union, and produces an intSet containing all the elements of A and B; that is, A∪B.
 intSet*
 intset_union_internal(intSet *setA, intSet *setB){
 	intSet  *r = NULL;
@@ -478,10 +474,8 @@ intset_union(PG_FUNCTION_ARGS)
 	//pfree(setB);
 	PG_RETURN_POINTER(result);
 }
-//----------------------------------------------//
 
 
-//-------------------------7--------------------//
 //A !! B takes the set disjunction, and produces an intSet containing elements 
 //that are in A and not in B, or that are in B and not in A.
 intSet*
@@ -556,15 +550,11 @@ intset_disjunction_internal(intSet *setA, intSet *setB){
 		SET_VARSIZE(r, VARHDRSZ+l*VARHDRSZ);
 		memcpy(VARDATA(r),dr,l*VARHDRSZ);
 		free(dr);
-		//ereport(ERROR,
-		//		(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-		//		 errmsg("invalid input syntax for complex: \"%d,%d,%d\"",
-		//				dr[2],k,r->length)));	
 		return r;
 	}
 
 }
-//extern Datum intset_disjunction(PG_FUNCTION_ARGS);
+
 
 PG_FUNCTION_INFO_V1(intset_disjunction);
 
@@ -575,13 +565,12 @@ intset_disjunction(PG_FUNCTION_ARGS)
 	intSet *setB = (intSet *) PG_DETOAST_DATUM(PG_GETARG_POINTER(1));
 	intSet *result;
 	result = intset_disjunction_internal(setA, setB);
-	//pfree(setA);
-	//pfree(setB);
+	pfree(setA);
+	pfree(setB);
 	PG_RETURN_POINTER(result);
 }
 
 
-//------------------------8---------------------//
 //A - B takes the set difference, and produces an intSet containing elements that 
 //are in A and not in B. Note that this is not the same as A !! B.
 intSet*
@@ -631,17 +620,13 @@ intset_difference_internal(intSet *setA, intSet *setB){
 		r = (intSet *)palloc(VARHDRSZ+k*VARHDRSZ);
 		SET_VARSIZE(r, VARHDRSZ+k*VARHDRSZ);
 		memcpy(VARDATA(r),dr,k*VARHDRSZ);
-		//ereport(ERROR,
-		//		(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-		//		 errmsg("invalid input syntax for complex: \"%d,%d,%d\"",
-		//				dr[2],k,r->length)));	
 		return r;
 	}
 
 }
 
-PG_FUNCTION_INFO_V1(intset_difference);
 
+PG_FUNCTION_INFO_V1(intset_difference);
 Datum
 intset_difference(PG_FUNCTION_ARGS)
 {
@@ -649,8 +634,8 @@ intset_difference(PG_FUNCTION_ARGS)
 	intSet *setB = (intSet *) PG_DETOAST_DATUM(PG_GETARG_POINTER(1));
 	intSet *result;
 	result = intset_difference_internal(setA, setB);
-	//pfree(setA);
-	//pfree(setB);
+	pfree(setA);
+	pfree(setB);
 	PG_RETURN_POINTER(result);
 }
 
