@@ -176,13 +176,12 @@ Datum
 intset_contains(PG_FUNCTION_ARGS)
 {
 	int32 value = PG_GETARG_INT32(0);
-	intSet *set = (intSet *) PG_GETARG_POINTER(1);
+	intSet *set = (intSet *)PG_DETOAST_DATUM(PG_GETARG_POINTER(1));
 	bool res;
 	res = intset_contains_internal(value, set);
 	PG_RETURN_BOOL(res);
 }
 //-----------------------------------------//
-
 //-------------------2----------OK-----------//
 intSet
 intset_sort_internal(intSet *set) //sort the array
@@ -209,7 +208,7 @@ Datum
 intset_cardinality(PG_FUNCTION_ARGS)
 {
 	int32 counter;
-	intSet *set = (intSet *) PG_GETARG_POINTER(0);
+	intSet *set = (intSet *) PG_DETOAST_DATUM(PG_GETARG_POINTER(0));
 	counter = VARSIZE_ANY_EXHDR(set)/4;
 	PG_RETURN_INT32(counter);
 }
@@ -253,8 +252,8 @@ PG_FUNCTION_INFO_V1(intset_containset);
 Datum
 intset_containset(PG_FUNCTION_ARGS)
 {
-	intSet *setA = (intSet *) PG_GETARG_POINTER(0);
-	intSet *setB = (intSet *) PG_GETARG_POINTER(1);
+	intSet *setA = (intSet *) PG_DETOAST_DATUM(PG_GETARG_POINTER(0));
+	intSet *setB = (intSet *) PG_DETOAST_DATUM(PG_GETARG_POINTER(1));
 	bool res;
 	res = intset_containset_internal(setB, setA);
 	PG_RETURN_BOOL(res);
@@ -300,8 +299,8 @@ PG_FUNCTION_INFO_V1(intset_equal);
 
 Datum
 intset_equal(PG_FUNCTION_ARGS){
-	intSet *setA = (intSet *) PG_GETARG_POINTER(0);
-	intSet *setB = (intSet *) PG_GETARG_POINTER(1);
+	intSet *setA = (intSet *) PG_DETOAST_DATUM(PG_GETARG_POINTER(0));
+	intSet *setB = (intSet *) PG_DETOAST_DATUM(PG_GETARG_POINTER(1));
 	bool res;
 	
 	res = intset_equal_internal(setA, setB);
@@ -365,8 +364,8 @@ PG_FUNCTION_INFO_V1(intset_intersection);
 
 Datum
 intset_intersection(PG_FUNCTION_ARGS){
-	intSet *setA = (intSet *) PG_GETARG_POINTER(0);
-	intSet *setB = (intSet *) PG_GETARG_POINTER(1);
+	intSet *setA = (intSet *) PG_DETOAST_DATUM(PG_GETARG_POINTER(0));
+	intSet *setB = (intSet *) PG_DETOAST_DATUM(PG_GETARG_POINTER(1));
 	intSet *result;
 	
 	result = intset_intersection_internal(setA, setB);
@@ -443,8 +442,8 @@ PG_FUNCTION_INFO_V1(intset_union);
 Datum
 intset_union(PG_FUNCTION_ARGS)
 {
-	intSet *setA = (intSet *) PG_GETARG_POINTER(0);
-	intSet *setB = (intSet *) PG_GETARG_POINTER(1);
+	intSet *setA = (intSet *) PG_DETOAST_DATUM(PG_GETARG_POINTER(0));
+	intSet *setB = (intSet *) PG_DETOAST_DATUM(PG_GETARG_POINTER(1));
 	intSet *result;
 
 	result = intset_union_internal(setA, setB);
@@ -545,8 +544,8 @@ PG_FUNCTION_INFO_V1(intset_disjunction);
 Datum
 intset_disjunction(PG_FUNCTION_ARGS)
 {
-	intSet *setA = (intSet *) PG_GETARG_POINTER(0);
-	intSet *setB = (intSet *) PG_GETARG_POINTER(1);
+	intSet *setA = (intSet *) PG_DETOAST_DATUM(PG_GETARG_POINTER(0));
+	intSet *setB = (intSet *) PG_DETOAST_DATUM(PG_GETARG_POINTER(1));
 	intSet *result;
 	result = intset_disjunction_internal(setA, setB);
 	//pfree(setA);
@@ -619,12 +618,13 @@ PG_FUNCTION_INFO_V1(intset_difference);
 Datum
 intset_difference(PG_FUNCTION_ARGS)
 {
-	intSet *setA = (intSet *) PG_GETARG_POINTER(0);
-	intSet *setB = (intSet *) PG_GETARG_POINTER(1);
+	intSet *setA = (intSet *) PG_DETOAST_DATUM(PG_GETARG_POINTER(0));
+	intSet *setB = (intSet *) PG_DETOAST_DATUM(PG_GETARG_POINTER(1));
 	intSet *result;
 	result = intset_difference_internal(setA, setB);
 	//pfree(setA);
 	//pfree(setB);
 	PG_RETURN_POINTER(result);
 }
+
 
