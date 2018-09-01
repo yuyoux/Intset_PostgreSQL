@@ -1,11 +1,10 @@
 #include "postgres.h"
-
 #include "fmgr.h"
-# include <stdio.h>
-# include <string.h>
-# include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include <ctype.h>
-#include "libpq/pqformat.h"		/* needed for send/recv functions */
+#include "libpq/pqformat.h"
 
 
 PG_MODULE_MAGIC;
@@ -15,6 +14,10 @@ typedef struct intSet
 	int32	length;
 	int	data[FLEXIBLE_ARRAY_MEMBER];
 } intSet;
+
+/*****************************************************************************
+ * Declaration
+ *****************************************************************************/
 
 bool intset_contains_internal(int value, intSet *set);
 intSet intset_sort_internal(intSet *set);
@@ -28,6 +31,7 @@ intSet* intset_disjunction_internal(intSet *setA, intSet *setB);
 /*****************************************************************************
  * Input/Output functions
  *****************************************************************************/
+
 PG_FUNCTION_INFO_V1(intset_in);
 
 Datum
@@ -269,7 +273,6 @@ intset_containset_internal(intSet *setA, intSet *setB)
 		else
 			break;	
 	}
-
 	return (n == nb) ? TRUE : FALSE;
 }
 
@@ -302,7 +305,7 @@ intset_equal_internal(intSet *setA, intSet *setB)
 	da =(int*) VARDATA(setA);
 	db = (int*)VARDATA(setB);	
 	result = FALSE;
-	if (na == nb)
+	if (na == nb)			//check length
 	{
 		result = TRUE;
 
@@ -325,8 +328,7 @@ Datum
 intset_equal(PG_FUNCTION_ARGS){
 	intSet *setA = (intSet *) PG_DETOAST_DATUM(PG_GETARG_POINTER(0));
 	intSet *setB = (intSet *) PG_DETOAST_DATUM(PG_GETARG_POINTER(1));
-	bool res;
-	
+	bool res;	
 	res = intset_equal_internal(setA, setB);
 	PG_RETURN_BOOL(res);
 
@@ -334,6 +336,7 @@ intset_equal(PG_FUNCTION_ARGS){
 
 
 //A && B  takes the set intersection, and produces an intSet containing the elements common to A and B; that is, A∩B.
+//referenced from _int_tool.c from build-in type intarray
 intSet*
 intset_intersection_internal(intSet *setA, intSet *setB)
 {	
@@ -356,7 +359,7 @@ intset_intersection_internal(intSet *setA, intSet *setB)
 	dr = (int*)calloc(na+nb,sizeof(int));
 
 	i = j = k = 0;
-	while (i < na && j < nb)
+	while (i < na && j < nb)		//get the intersection
 	{
 		if (da[i] < db[j])
 			i++;
@@ -371,14 +374,14 @@ intset_intersection_internal(intSet *setA, intSet *setB)
 			j++;
 	}
 	
-	if (k == 0)
+	if (k == 0)				//empty set
 	{
 		r = (intSet *)palloc(VARHDRSZ);
 		SET_VARSIZE(r,VARHDRSZ);
 		return r;
 	}
 	else
-		r = (intSet *)palloc(VARHDRSZ+k*VARHDRSZ);
+		r = (intSet *)palloc(VARHDRSZ+k*VARHDRSZ);	//VARHDRSZ = sizeof(int32)
 		SET_VARSIZE(r, VARHDRSZ+k*VARHDRSZ);
 		memcpy(VARDATA(r),dr,k*VARHDRSZ);
 		return r;
@@ -400,6 +403,7 @@ intset_intersection(PG_FUNCTION_ARGS){
 
 
 //A || B  takes the set union, and produces an intSet containing all the elements of A and B; that is, A∪B.
+//referenced from _int_tool.c from build-in type intarray
 intSet*
 intset_union_internal(intSet *setA, intSet *setB){
 	intSet  *r = NULL;
@@ -412,20 +416,20 @@ intset_union_internal(intSet *setA, intSet *setB){
 	da =(int*) VARDATA(setA);
 	db = (int*)VARDATA(setB);
 
-	if (na == 0 && nb == 0){
+	if (na == 0 && nb == 0){	//if two empty sets input
 		return setA;
 	}
 	else if (na == 0)
-		return setB;
+		return setB;		//if set a is empty
 			
-	else if (nb == 0)
+	else if (nb == 0)		//if set b is empty
 		return setA;
 	
-	else
+	else				//if both are not empty
 	{	
 		dr = (int*)calloc(na+nb,sizeof(int));
 		
-		/* union */
+		// union 
 		i = j =k= 0;
 		while (i < na && j < nb)
 		{
@@ -481,7 +485,7 @@ intset_disjunction_internal(intSet *setA, intSet *setB){
 	da =(int*) VARDATA(setA);
 	db = (int*)VARDATA(setB);
 	
-	if (na == 0){
+	if (na == 0){				// if set a is empty
 		dr = (int*)calloc(na+nb,sizeof(int));
 		i=0;
 		for(i=0;i<nb;i++){
@@ -493,7 +497,7 @@ intset_disjunction_internal(intSet *setA, intSet *setB){
 		free(dr);
 		return r;
 	}
-	else if (nb == 0){
+	else if (nb == 0){			//if set b is empty
 		dr = (int*)calloc(na+nb,sizeof(int));
 		i=0;
 		for(i=0;i<na;i++){
@@ -505,12 +509,12 @@ intset_disjunction_internal(intSet *setA, intSet *setB){
 		free(dr);
 		return r;
 
-	}else if (na == 0 && nb == 0){
+	}else if (na == 0 && nb == 0){		//if two empty sets input
 		r = (intSet *)palloc(VARHDRSZ);
 		SET_VARSIZE(r,VARHDRSZ);
 		return r;	
 	
-	}else{
+	}else{					//if both are not empty
 		dr = (int*)calloc(na+nb,sizeof(int));
 	
 		i=j=k=m=n=0;
@@ -574,13 +578,13 @@ intset_difference_internal(intSet *setA, intSet *setB){
 	da =(int*) VARDATA(setA);
 	db = (int*)VARDATA(setB);
 
-	if (na == 0){
+	if (na == 0){				//if set a is empty
 		r = (intSet *)palloc(VARHDRSZ);
 		SET_VARSIZE(r,VARHDRSZ);
 		return r;
 	}
 
-	else if (nb == 0){
+	else if (nb == 0){			//if set b is empty
 		dr = (int*)calloc(na+nb,sizeof(int));
 		i=0;
 		for(i=0;i<na;i++){
@@ -591,7 +595,7 @@ intset_difference_internal(intSet *setA, intSet *setB){
 		memcpy(VARDATA(r),dr,na*VARHDRSZ);
 		return r;
 		
-	}else{
+	}else{			
 		dr = (int*)calloc(na+nb,sizeof(int));
 		i=j=k=0;
 		for (j=0;j<na;j++){
@@ -625,7 +629,3 @@ intset_difference(PG_FUNCTION_ARGS)
 	result = intset_difference_internal(setA, setB);
 	PG_RETURN_POINTER(result);
 }
-
-
-
-
