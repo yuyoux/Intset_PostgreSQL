@@ -4,6 +4,7 @@
 # include <stdio.h>
 # include <string.h>
 # include <stdlib.h>
+#include <ctype.h>
 #include "libpq/pqformat.h"		/* needed for send/recv functions */
 
 
@@ -151,6 +152,7 @@ intset_in(PG_FUNCTION_ARGS)
 	PG_RETURN_POINTER(result);
 }
 
+
 PG_FUNCTION_INFO_V1(intset_out);
 
 Datum
@@ -179,6 +181,7 @@ intset_out(PG_FUNCTION_ARGS)
 	pfree(out);
 	PG_RETURN_CSTRING(real);
 }
+
 /*****************************************************************************
  * New Operators
  *
