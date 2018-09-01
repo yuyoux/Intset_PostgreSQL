@@ -131,7 +131,7 @@ intset_out(PG_FUNCTION_ARGS)
 
 	
 	if(length==0) out = (char*)calloc(2,sizeof(char));
-	else out = (char*)calloc(2*length+1,sizeof(char));
+	else out = (char*)calloc(10000,sizeof(char));
 	
 	//offset+=sprintf(out,"%d,{",res[4]);
 	out[0]='{';
