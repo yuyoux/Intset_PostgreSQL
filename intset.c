@@ -44,10 +44,7 @@ intset_in(PG_FUNCTION_ARGS)
 	
 	char *temp=malloc(index);
 	char *token;
-	//char *out;
 	int *res;
-	//int offset=1;
-	//int *distinct;
 	intSet  *result ;
 	
 	for(i =0;i<index;i++){                  //strip the whitespaces and count the nb of element 
@@ -59,11 +56,10 @@ intset_in(PG_FUNCTION_ARGS)
 		temp[j]=0;
 	}
  
-         
+
 	if (length>=1) length++;
 	if (strlen(temp)==3) length =1; 
 	j=0;
-
 
 	res = (int*)calloc(length,VARHDRSZ);
 	token= strtok(temp,",");
@@ -393,7 +389,7 @@ intset_intersection(PG_FUNCTION_ARGS){
 
 //---------------------------------------------//
 
-//----------------------6---------OK-------------//
+//----------------------6---------wrong-------------//
 
 intSet*
 intset_union_internal(intSet *setA, intSet *setB){
@@ -478,10 +474,10 @@ intset_disjunction_internal(intSet *setA, intSet *setB){
 	int na, nb;
 	int *da, *db, *dr;
 	int i, j, k, l,m,n;
-	na = setA->length;
-	nb = setB->length;
-	da = setA->data;
-	db = setB->data;
+	na = VARSIZE_ANY_EXHDR(setA)/4;
+	nb = VARSIZE_ANY_EXHDR(setB)/4;
+	da =(int*) VARDATA(setA);
+	db = (int*)VARDATA(setB);
 	
 	if (na == 0){
 		dr = (int*)calloc(na+nb,sizeof(int));
@@ -490,28 +486,26 @@ intset_disjunction_internal(intSet *setA, intSet *setB){
 			dr[i]=db[i];
 		}
 		r = (intSet *)palloc(VARHDRSZ+nb*VARHDRSZ);
-		//r->length = nb;
 		SET_VARSIZE(r, VARHDRSZ+nb*VARHDRSZ);
-		//r->length = k;
-		memcpy(r->data,dr,nb*VARHDRSZ);
+		memcpy(VARDATA(r),dr,nb*VARHDRSZ);
+		free(dr);
 		return r;
-	}else if (nb == 0){
+	}
+	else if (nb == 0){
 		dr = (int*)calloc(na+nb,sizeof(int));
 		i=0;
 		for(i=0;i<na;i++){
 			dr[i]=da[i];
 		}
 		r = (intSet *)palloc(VARHDRSZ+na*VARHDRSZ);
-		//r->length = na;
 		SET_VARSIZE(r, VARHDRSZ+na*VARHDRSZ);
-		//r->length = k;
-		memcpy(r->data,dr,na*VARHDRSZ);
+		memcpy(VARDATA(r),dr,na*VARHDRSZ);
+		free(dr);
 		return r;
 
 	}else if (na == 0 && nb == 0){
 		r = (intSet *)palloc(VARHDRSZ);
-		r->length=0;
-		SET_VARSIZE(r,0);
+		SET_VARSIZE(r,VARHDRSZ);
 		return r;	
 	
 	}else{
@@ -529,7 +523,7 @@ intset_disjunction_internal(intSet *setA, intSet *setB){
 			
 			}
 		}
-		l = k+1;
+		l = k;
 		for (m=0;m<nb;m++){
 			for(n=0;n<na;n++){
 				if(db[m]==da[n]){
@@ -543,12 +537,9 @@ intset_disjunction_internal(intSet *setA, intSet *setB){
 		}
 
 		r = (intSet *)palloc(VARHDRSZ+l*VARHDRSZ);
-		//r = (intSet *) repalloc(r, k);
-		//dr = realloc(dr,k);
-		//r->length = k;
 		SET_VARSIZE(r, VARHDRSZ+l*VARHDRSZ);
-		//r->length = k;
-		memcpy(r->data,dr,l*VARHDRSZ);
+		memcpy(VARDATA(r),dr,l*VARHDRSZ);
+		free(dr);
 		//ereport(ERROR,
 		//		(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
 		//		 errmsg("invalid input syntax for complex: \"%d,%d,%d\"",
