@@ -51,11 +51,12 @@ CREATE FUNCTION intset_out(intSet)
 -- memory block required to hold the type (we need two 8-byte doubles).
 
 CREATE TYPE intSet (
-   internallength = 4096,
+   
    input = intset_in,
-   output = intset_out
-   --alignment = int4,
-   --element = int4
+   output = intset_out,
+  -- storage = EXTENDED,
+  -- alignment = int4
+   internallength = 200
    
 );
 
@@ -218,9 +219,5 @@ CREATE OPERATOR - (
 --delete from mySets where iset @> '{1,2,3,4,5,6}';
 
 --select * from mySets;
-
-
-
-
 
 
