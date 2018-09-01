@@ -54,8 +54,8 @@ CREATE TYPE intSet (
    
    input = intset_in,
    output = intset_out,
-  -- storage = EXTENDED,
-  -- alignment = int4
+   --storage = extended,
+   alignment = int4,
    internallength = VARIABLE
    
 );
@@ -98,9 +98,13 @@ insert into mySets values (1, '{1,2,3}');
 insert into mySets values (2, '{1,3,1,3,1}');
 insert into mySets values (3, '{3,4,5}');
 insert into mySets values (4, '{4,5}');
-insert into mySets values (4, '{4,5,6,7,8,9,11,12,13}');
 insert into mySets values (5, '{}');
 insert into mySets values (6, '{}');
+insert into mySets values (7, '{1,3,56,765,45,345,6546,2,3,4,66,77,88,98,76,54,34,20}');
+insert into mySets values (8, '{4,5,6,7,8,9,11,12,13}');
+insert into mySets values (9, '{46,25,46,67,28,19,1,2,103,67,87,45,34,23,98,70,67,55,45}');
+insert into mySets values (10, '{4,35,62,7,80,9,91,2,53,6,7,8,9,23,43,54,66,88,888}');
+
 select * from mySets;
 
 -----------------------------
