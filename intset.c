@@ -393,7 +393,7 @@ intset_intersection(PG_FUNCTION_ARGS){
 
 //---------------------------------------------//
 
-//----------------------6---------wrong-------------//
+//----------------------6---------OK-------------//
 
 intSet*
 intset_union_internal(intSet *setA, intSet *setB){
@@ -472,10 +472,95 @@ intset_union(PG_FUNCTION_ARGS)
 //-------------------------7--------------------//
 //A !! B takes the set disjunction, and produces an intSet containing elements 
 //that are in A and not in B, or that are in B and not in A.
-/*intSet*
+intSet*
 intset_disjunction_internal(intSet *setA, intSet *setB){
+	intSet  *r;
+	int na, nb;
+	int *da, *db, *dr;
+	int i, j, k, l,m,n;
+	na = setA->length;
+	nb = setB->length;
+	da = setA->data;
+	db = setB->data;
+	
+	if (na == 0){
+		dr = (int*)calloc(na+nb,sizeof(int));
+		i=0;
+		for(i=0;i<nb;i++){
+			dr[i]=db[i];
+		}
+		r = (intSet *)palloc(VARHDRSZ+nb*VARHDRSZ);
+		//r->length = nb;
+		SET_VARSIZE(r, VARHDRSZ+nb*VARHDRSZ);
+		//r->length = k;
+		memcpy(r->data,dr,nb*VARHDRSZ);
+		return r;
+	}else if (nb == 0){
+		dr = (int*)calloc(na+nb,sizeof(int));
+		i=0;
+		for(i=0;i<na;i++){
+			dr[i]=da[i];
+		}
+		r = (intSet *)palloc(VARHDRSZ+na*VARHDRSZ);
+		//r->length = na;
+		SET_VARSIZE(r, VARHDRSZ+na*VARHDRSZ);
+		//r->length = k;
+		memcpy(r->data,dr,na*VARHDRSZ);
+		return r;
+
+	}else if (na == 0 && nb == 0){
+		r = (intSet *)palloc(VARHDRSZ);
+		r->length=0;
+		SET_VARSIZE(r,0);
+		return r;	
+	
+	}else{
+		dr = (int*)calloc(na+nb,sizeof(int));
+	
+		i=j=k=m=n=0;
+		for (j=0;j<na;j++){
+			for(i=0;i<nb;i++){
+				if(da[j]==db[i]){
+					break;
+				}
+			}
+			if (i == nb){
+				dr[k++] = da[j];
+			
+			}
+		}
+		l = k+1;
+		for (m=0;m<nb;m++){
+			for(n=0;n<na;n++){
+				if(db[m]==da[n]){
+					break;
+				}
+			}
+			if (n == na){
+				dr[l++] = db[m];
+			
+			}
+		}
+
+		r = (intSet *)palloc(VARHDRSZ+l*VARHDRSZ);
+		//r = (intSet *) repalloc(r, k);
+		//dr = realloc(dr,k);
+		//r->length = k;
+		SET_VARSIZE(r, VARHDRSZ+l*VARHDRSZ);
+		//r->length = k;
+		memcpy(r->data,dr,l*VARHDRSZ);
+		//ereport(ERROR,
+		//		(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+		//		 errmsg("invalid input syntax for complex: \"%d,%d,%d\"",
+		//				dr[2],k,r->length)));	
+		return r;
+	}
+
 }
+//extern Datum intset_disjunction(PG_FUNCTION_ARGS);
+
 PG_FUNCTION_INFO_V1(intset_disjunction);
+
 Datum
 intset_disjunction(PG_FUNCTION_ARGS)
 {
@@ -487,7 +572,6 @@ intset_disjunction(PG_FUNCTION_ARGS)
 	//pfree(setB);
 	PG_RETURN_POINTER(result);
 }
-*/
 
 
 //------------------------8---------------------//
