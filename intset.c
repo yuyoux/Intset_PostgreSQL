@@ -177,7 +177,7 @@ intset_out(PG_FUNCTION_ARGS)
 	if (length==0) offset+=sprintf(out+1,"}");
 	else sprintf(out+offset-1,"}");
 
-	memcpy(real, out, offset);
+	memcpy(real, out, offset+1);
 	pfree(out);
 	PG_RETURN_CSTRING(real);
 }
