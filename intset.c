@@ -25,10 +25,6 @@ intSet* intset_union_internal(intSet *setA, intSet *setB);
 intSet* intset_difference_internal(intSet *setA, intSet *setB);
 intSet* intset_disjunction_internal(intSet *setA, intSet *setB);
 
-
-
-
-
 /*****************************************************************************
  * Input/Output functions
  *****************************************************************************/
@@ -187,7 +183,6 @@ intset_out(PG_FUNCTION_ARGS)
  *
  * A practical Complex datatype would provide much more than this, of course.
  *****************************************************************************/
-
 //------------------1------------OK----------//
 bool
 intset_contains_internal(int value, intSet *set)
@@ -658,5 +653,6 @@ intset_difference(PG_FUNCTION_ARGS)
 	//pfree(setB);
 	PG_RETURN_POINTER(result);
 }
+
 
 
