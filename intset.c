@@ -46,18 +46,18 @@ intset_in(PG_FUNCTION_ARGS)
 	
 	for(i =0;i<index;i++){                  //strip the whitespaces and count the nb of element 
 		if(str[i]!=' ') {
-			if(str[i]=='{' ){
+			if(str[i]=='{' ){	//check for duplicate '{' 
 				if(i!=0)  ereport(ERROR,
 						(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
 						 errmsg("invalid input syntax for intSet")));
 				
 			}
 			else if(str[i]==',') {
-				length++;   //count fot ','
+				length++;       //count fot ','
 				quo_flag=1;
 
 			}
-			else if(str[i]=='}'){
+			else if(str[i]=='}'){   //check for duplicate '}' 
 				if(i!=index-1){
 					ereport(ERROR,
 						(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
@@ -65,12 +65,12 @@ intset_in(PG_FUNCTION_ARGS)
 				}
 			}
 			else{
-				if(isdigit(str[i])==0) {   //check whether is digit or not
+				if(isdigit(str[i])==0) {	//check whether is digit or not (float or not)
 					ereport(ERROR,
 						(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
 						 errmsg("invalid input syntax for intSet")));     
 				}
-				else if(quo_flag==0 && str[i-1]==' '){
+				else if(quo_flag==0 && str[i-1]==' '){		//check if lack the ',' between two digits
 					ereport(ERROR,
 						(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
 						 errmsg("invalid input syntax for intSet")));    
@@ -215,12 +215,13 @@ intset_sort_internal(intSet *set) //sort the array
 {
 	int count = VARSIZE_ANY_EXHDR(set)/4;
 	int i,j,t;
+	int *data =(int*) VARDATA(set);
 	for(i=0;i<count;i++){		//bubble sort
 		for(j=i+1;j<count;j++){
-			if(set->data[j]>set->data[j+1]){
-				t=set->data[j];
-				set->data[j]=set->data[j+1];
-				set->data[j+1]=t;
+			if(data[j]>data[j+1]){
+				t=data[j];
+				data[j]=data[j+1];
+				data[j+1]=t;
 			}
 		}
 	}
@@ -300,9 +301,7 @@ intset_equal_internal(intSet *setA, intSet *setB)
 	nb = VARSIZE_ANY_EXHDR(setB)/4;	
 	da =(int*) VARDATA(setA);
 	db = (int*)VARDATA(setB);	
-
 	result = FALSE;
-
 	if (na == nb)
 	{
 		result = TRUE;
@@ -394,8 +393,6 @@ intset_intersection(PG_FUNCTION_ARGS){
 	intSet *result;
 	
 	result = intset_intersection_internal(setA, setB);
-	pfree(setA);
-	pfree(setB);
 	PG_RETURN_POINTER(result);
 
 }
@@ -409,8 +406,6 @@ intset_union_internal(intSet *setA, intSet *setB){
 	int na, nb;
 	int i, j,k;
 	int *da, *db,*dr;
-	//intset_sort_internal(setA);
-	//intset_sort_internal(setB);
 	
 	na = VARSIZE_ANY_EXHDR(setA)/4;
 	nb = VARSIZE_ANY_EXHDR(setB)/4;
@@ -468,10 +463,7 @@ intset_union(PG_FUNCTION_ARGS)
 	intSet *setA = (intSet *) PG_DETOAST_DATUM(PG_GETARG_POINTER(0));
 	intSet *setB = (intSet *) PG_DETOAST_DATUM(PG_GETARG_POINTER(1));
 	intSet *result;
-
 	result = intset_union_internal(setA, setB);
-	//pfree(setA);
-	//pfree(setB);
 	PG_RETURN_POINTER(result);
 }
 
@@ -565,8 +557,6 @@ intset_disjunction(PG_FUNCTION_ARGS)
 	intSet *setB = (intSet *) PG_DETOAST_DATUM(PG_GETARG_POINTER(1));
 	intSet *result;
 	result = intset_disjunction_internal(setA, setB);
-	pfree(setA);
-	pfree(setB);
 	PG_RETURN_POINTER(result);
 }
 
@@ -579,7 +569,6 @@ intset_difference_internal(intSet *setA, intSet *setB){
 	int na, nb;
 	int *da, *db, *dr;
 	int i, j, k;
-	//flag = 1;
 	na = VARSIZE_ANY_EXHDR(setA)/4;
 	nb = VARSIZE_ANY_EXHDR(setB)/4;
 	da =(int*) VARDATA(setA);
@@ -634,10 +623,9 @@ intset_difference(PG_FUNCTION_ARGS)
 	intSet *setB = (intSet *) PG_DETOAST_DATUM(PG_GETARG_POINTER(1));
 	intSet *result;
 	result = intset_difference_internal(setA, setB);
-	pfree(setA);
-	pfree(setB);
 	PG_RETURN_POINTER(result);
 }
+
 
 
 
