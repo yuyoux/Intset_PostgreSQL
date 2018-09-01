@@ -161,7 +161,8 @@ bool
 intset_contains_internal(int value, intSet *set)
 {
 	int i = 0;
-	for (i=0; i < set->length; ++i){
+	int count = VARSIZE_ANY_EXHDR(set)/4;
+	for (i=0; i < count; ++i){
 		if (set->data[i] == value){
 			return true;
 		}
@@ -176,9 +177,7 @@ intset_contains(PG_FUNCTION_ARGS)
 {
 	int32 value = PG_GETARG_INT32(0);
 	intSet *set = (intSet *) PG_GETARG_POINTER(1);
-	
 	bool res;
-	
 	res = intset_contains_internal(value, set);
 	PG_RETURN_BOOL(res);
 }
@@ -188,7 +187,7 @@ intset_contains(PG_FUNCTION_ARGS)
 intSet
 intset_sort_internal(intSet *set) //sort the array
 {
-	int32 count = set->length;
+	int count = VARSIZE_ANY_EXHDR(set)/4;
 	int i,j,t;
 	for(i=0;i<count;i++){		//bubble sort
 		for(j=i+1;j<count;j++){
@@ -211,8 +210,7 @@ intset_cardinality(PG_FUNCTION_ARGS)
 {
 	int32 counter;
 	intSet *set = (intSet *) PG_GETARG_POINTER(0);
-	//intset_sort_internal(set);
-	counter = set->length;
+	counter = VARSIZE_ANY_EXHDR(set)/4;
 	PG_RETURN_INT32(counter);
 }
 //-------------------------------------------//
@@ -226,13 +224,10 @@ intset_containset_internal(intSet *setA, intSet *setB)
 	int na, nb;
 	int i, j, n;
 	int *da, *db;
-	//intset_sort_internal(setA);
-	//intset_sort_internal(setB);	
-
-	na = setA->length;
-	nb = setB->length;
-	da = setA->data;
-	db = setB->data;
+	na = VARSIZE_ANY_EXHDR(setA)/4;
+	nb = VARSIZE_ANY_EXHDR(setB)/4;	
+	da =(int*) VARDATA(setA);
+	db = (int*)VARDATA(setB);
 
 	i = j = n = 0;
 	while (i < na && j < nb)
@@ -261,8 +256,7 @@ intset_containset(PG_FUNCTION_ARGS)
 	intSet *setA = (intSet *) PG_GETARG_POINTER(0);
 	intSet *setB = (intSet *) PG_GETARG_POINTER(1);
 	bool res;
-	
-	res = intset_containset_internal(setA, setB);
+	res = intset_containset_internal(setB, setA);
 	PG_RETURN_BOOL(res);
 }
 
@@ -278,14 +272,10 @@ intset_equal_internal(intSet *setA, intSet *setB)
 	int n;
 	int *da,*db;
 	bool result;
-
-	//intset_sort_internal(setA);
-	//intset_sort_internal(setB);	
-
-	na = setA->length;
-	nb = setB->length;
-	da = setA->data;
-	db = setB->data;
+	na = VARSIZE_ANY_EXHDR(setA)/4;
+	nb = VARSIZE_ANY_EXHDR(setB)/4;	
+	da =(int*) VARDATA(setA);
+	db = (int*)VARDATA(setB);	
 
 	result = FALSE;
 
@@ -389,7 +379,7 @@ intset_intersection(PG_FUNCTION_ARGS){
 
 //---------------------------------------------//
 
-//----------------------6---------wrong-------------//
+//----------------------6---------OK-------------//
 
 intSet*
 intset_union_internal(intSet *setA, intSet *setB){

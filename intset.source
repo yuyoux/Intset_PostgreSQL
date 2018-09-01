@@ -56,7 +56,7 @@ CREATE TYPE intSet (
    output = intset_out,
   -- storage = EXTENDED,
   -- alignment = int4
-   internallength = 200
+   internallength = VARIABLE
    
 );
 
@@ -97,6 +97,7 @@ create table mySets (id integer primary key, iset intSet);
 insert into mySets values (1, '{1,2,3}');
 insert into mySets values (2, '{1,3,1,3,1}');
 insert into mySets values (3, '{3,4,5}');
+insert into mySets values (4, '{4,5}');
 insert into mySets values (4, '{4,5,6,7,8,9,11,12,13}');
 insert into mySets values (5, '{}');
 insert into mySets values (6, '{}');
