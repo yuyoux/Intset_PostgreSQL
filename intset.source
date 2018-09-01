@@ -96,13 +96,9 @@ CREATE FUNCTION intset_disjunction(intSet, intSet) RETURNS intSet
 
 CREATE OPERATOR @ (
    rightarg = intSet, procedure = intset_cardinality
-   -- commutator = @
-   -- restrict = scalarltsel, join = scalarltjoinsel
 );
 CREATE OPERATOR @> (
-   leftarg = intSet, rightarg = intSet, procedure = intset_containset,
-   commutator = <@
-   -- restrict = scalarltsel, join = scalarltjoinsel
+   leftarg = intSet, rightarg = intSet, procedure = intset_containset
 );
 CREATE OPERATOR = (
    leftarg = intSet, rightarg = intSet, procedure = intset_equal,
@@ -113,23 +109,17 @@ CREATE OPERATOR = (
 );
 CREATE OPERATOR && (
    leftarg = intSet, rightarg = intSet, procedure = intset_intersection,
-   commutator = &&& 
-   -- restrict = scalargtsel, join = scalargtjoinsel
+   commutator = !! 
 );
 CREATE OPERATOR || (
    leftarg = intSet, rightarg = intSet, procedure = intset_union
-   -- commutator = &&& 
-   -- restrict = scalargtsel, join = scalargtjoinsel
 );
 CREATE OPERATOR - (
    leftarg = intSet, rightarg = intSet, procedure = intset_difference
-   -- commutator = -- 
-   -- restrict = scalargtsel, join = scalargtjoinsel
 );
 CREATE OPERATOR !! (
-   leftarg = intSet, rightarg = intSet, procedure = intset_disjunction
-    --commutator = -- 
-    --restrict = scalargtsel, join = scalargtjoinsel
+   leftarg = intSet, rightarg = intSet, procedure = intset_disjunction,
+   commutator = && 
 );
 
 -- now we can make the operator class
