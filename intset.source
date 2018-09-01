@@ -103,8 +103,6 @@ CREATE OPERATOR @> (
 CREATE OPERATOR = (
    leftarg = intSet, rightarg = intSet, procedure = intset_equal,
    commutator = = ,
-   -- leave out negator since we didn't create <> operator
-   -- negator = <> ,
    restrict = eqsel, join = eqjoinsel
 );
 CREATE OPERATOR && (
