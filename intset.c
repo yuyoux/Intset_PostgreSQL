@@ -151,7 +151,6 @@ intset_in(PG_FUNCTION_ARGS)
 	PG_RETURN_POINTER(result);
 }
 
-
 PG_FUNCTION_INFO_V1(intset_out);
 
 Datum
@@ -172,15 +171,14 @@ intset_out(PG_FUNCTION_ARGS)
 		offset+=sprintf(out+offset,"%d,",res[i]);
 	}
 
-	real = palloc0(offset*sizeof(char));
-	if (length==0) sprintf(out+1,"}");
+	real = (char*)calloc(offset,sizeof(char));
+	if (length==0) offset+=sprintf(out+1,"}");
 	else sprintf(out+offset-1,"}");
 
 	memcpy(real, out, offset);
 	pfree(out);
 	PG_RETURN_CSTRING(real);
 }
-
 /*****************************************************************************
  * New Operators
  *
