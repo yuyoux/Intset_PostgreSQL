@@ -37,33 +37,66 @@ Datum
 intset_in(PG_FUNCTION_ARGS)
 {
 	char  *str = PG_GETARG_CSTRING(0);
-
+	int quo_flag=1;
 	int length=0;
 	int i,j=0,k=0,m=0,t=0;
 	int index =strlen(str);
 	
-	char *temp=malloc(index);
+	char *temp=calloc(index+1,sizeof(char));
 	char *token;
 	int *res;
 	intSet  *result ;
 	
 	for(i =0;i<index;i++){                  //strip the whitespaces and count the nb of element 
-		if(str[i]!=' '){
-			if(str[i]==',') length++;   //count fot ','
+		if(str[i]!=' ') {
+			if(str[i]=='{' ){
+				if(i!=0)  ereport(ERROR,
+						(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+						 errmsg("invalid input syntax for intSet")));
+				
+			}
+			else if(str[i]==',') {
+				length++;   //count fot ','
+				quo_flag=1;
+
+			}
+			else if(str[i]=='}'){
+				if(i!=index-1){
+					ereport(ERROR,
+						(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+						  errmsg("invalid input syntax for intSet")));
+				}
+			}
+			else{
+				if(isdigit(str[i])==0) {   //check whether is digit or not
+					ereport(ERROR,
+						(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+						 errmsg("invalid input syntax for intSet")));     
+				}
+				else if(quo_flag==0 && str[i-1]==' '){
+					ereport(ERROR,
+						(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+						 errmsg("invalid input syntax for intSet")));    
+				}
+				else quo_flag=0;
+				
+			}
+			
 			temp[j]=str[i];
 			j++;
+			
 		}
 		temp[j]=0;
 	}
- 
-
 	if (length>=1) length++;
 	if (strlen(temp)==3) length =1; 
 	j=0;
 
 	res = (int*)calloc(length,VARHDRSZ);
 	token= strtok(temp,",");
-	if(temp[0]!='{')  printf("invalid input");        //check for '{'
+	if(temp[0]!='{')  ereport(ERROR,
+				(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+				 errmsg("invalid input syntax for intSet")));            //check for '{'
 	token++;
 	while(token!=NULL){		                  //get the value				
 		res[j]= atoi(token);
@@ -73,7 +106,9 @@ intset_in(PG_FUNCTION_ARGS)
 		token=strtok(NULL,",");	
 		
 	}
-	if(token==NULL) printf("invalid\n");
+	if(token==NULL) ereport(ERROR,
+				(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+				 errmsg("invalid input syntax for intSet")));    
 
 
 	if(length==2){
@@ -125,29 +160,25 @@ intset_out(PG_FUNCTION_ARGS)
 	intSet    *intset = (intSet *) PG_GETARG_POINTER(0);
 	int	 i,offset=1,length=0;
 	char *out;
-	//int *res = (int*)palloc(intset->length);
+	char *real;
 	int *res = (int*)VARDATA(intset);
 	length = VARSIZE_ANY_EXHDR(intset)/4;
 
+	if(length==0) out = (char*)palloc0(3*sizeof(char));
+	else out=(char*)palloc0(10000*sizeof(char));
 	
-	if(length==0) out = (char*)calloc(2,sizeof(char));
-	else out = (char*)calloc(10000,sizeof(char));
-	
-	//offset+=sprintf(out,"%d,{",res[4]);
 	out[0]='{';
 	for(i =0;i< length;i++) {
 		offset+=sprintf(out+offset,"%d,",res[i]);
 	}
-	
+
+	real = palloc0(offset*sizeof(char));
 	if (length==0) sprintf(out+1,"}");
 	else sprintf(out+offset-1,"}");
-/*
-	ereport(ERROR,
-				(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-				 errmsg("invalid input syntax for complex: \"%s",
-						out)));*/
-	
-	PG_RETURN_CSTRING(out);
+
+	memcpy(real, out, offset);
+	pfree(out);
+	PG_RETURN_CSTRING(real);
 }
 
 /*****************************************************************************
