@@ -54,7 +54,7 @@ CREATE TYPE intSet (
    
    input = intset_in,
    output = intset_out,
-   --storage = extended,
+   storage = extended,
    alignment = int4,
    internallength = VARIABLE
    

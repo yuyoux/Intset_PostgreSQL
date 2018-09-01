@@ -154,7 +154,7 @@ PG_FUNCTION_INFO_V1(intset_out);
 Datum
 intset_out(PG_FUNCTION_ARGS)
 {
-	intSet    *intset = (intSet *) PG_GETARG_POINTER(0);
+	intSet    *intset = (intSet *) PG_DETOAST_DATUM(PG_GETARG_POINTER(0));
 	int	 i,offset=1,length=0;
 	char *out;
 	char *real;
