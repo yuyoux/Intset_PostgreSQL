@@ -1,10 +1,11 @@
 #include "postgres.h"
+
 #include "fmgr.h"
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
+# include <stdio.h>
+# include <string.h>
+# include <stdlib.h>
 #include <ctype.h>
-#include "libpq/pqformat.h"
+#include "libpq/pqformat.h"		/* needed for send/recv functions */
 
 
 PG_MODULE_MAGIC;
@@ -14,10 +15,6 @@ typedef struct intSet
 	int32	length;
 	int	data[FLEXIBLE_ARRAY_MEMBER];
 } intSet;
-
-/*****************************************************************************
- * Declaration
- *****************************************************************************/
 
 bool intset_contains_internal(int value, intSet *set);
 intSet intset_sort_internal(intSet *set);
@@ -31,7 +28,6 @@ intSet* intset_disjunction_internal(intSet *setA, intSet *setB);
 /*****************************************************************************
  * Input/Output functions
  *****************************************************************************/
-
 PG_FUNCTION_INFO_V1(intset_in);
 
 Datum
@@ -153,33 +149,41 @@ intset_in(PG_FUNCTION_ARGS)
 }
 
 
+
+
 PG_FUNCTION_INFO_V1(intset_out);
 
 Datum
 intset_out(PG_FUNCTION_ARGS)
 {
+	
 	intSet    *intset = (intSet *) PG_DETOAST_DATUM(PG_GETARG_POINTER(0));
 	int	 i,offset=1,length=0;
 	char *out;
-	char *real;
+	char *new;
 	int *res = (int*)VARDATA(intset);
+	int max_mem = 200;
 	length = VARSIZE_ANY_EXHDR(intset)/4;
 
 	if(length==0) out = (char*)palloc0(3*sizeof(char));
-	else out=(char*)palloc0(10000*sizeof(char));
+	else out=(char*)calloc(200,sizeof(char));
 	
 	out[0]='{';
 	for(i =0;i< length;i++) {
 		offset+=sprintf(out+offset,"%d,",res[i]);
+		if(max_mem-offset<=10) {
+			new =realloc(out,offset*sizeof(char));
+			free(out);			
+			max_mem+=200;
+			out = calloc(max_mem,sizeof(char));
+			memcpy(out,new,offset);
+			free(new);
+		}	
 	}
-
-	real = (char*)calloc(offset,sizeof(char));
 	if (length==0) offset+=sprintf(out+1,"}");
 	else sprintf(out+offset-1,"}");
-
-	memcpy(real, out, offset+1);
-	pfree(out);
-	PG_RETURN_CSTRING(real);
+	PG_RETURN_CSTRING(out);
+	
 }
 
 /*****************************************************************************
@@ -258,7 +262,7 @@ intset_containset_internal(intSet *setA, intSet *setB)
 	nb = VARSIZE_ANY_EXHDR(setB)/4;	
 	da =(int*) VARDATA(setA);
 	db = (int*)VARDATA(setB);
-
+	
 	i = j = n = 0;
 	while (i < na && j < nb)
 	{
@@ -273,6 +277,7 @@ intset_containset_internal(intSet *setA, intSet *setB)
 		else
 			break;	
 	}
+
 	return (n == nb) ? TRUE : FALSE;
 }
 
@@ -305,7 +310,7 @@ intset_equal_internal(intSet *setA, intSet *setB)
 	da =(int*) VARDATA(setA);
 	db = (int*)VARDATA(setB);	
 	result = FALSE;
-	if (na == nb)			//check length
+	if (na == nb)
 	{
 		result = TRUE;
 
@@ -328,7 +333,8 @@ Datum
 intset_equal(PG_FUNCTION_ARGS){
 	intSet *setA = (intSet *) PG_DETOAST_DATUM(PG_GETARG_POINTER(0));
 	intSet *setB = (intSet *) PG_DETOAST_DATUM(PG_GETARG_POINTER(1));
-	bool res;	
+	bool res;
+	
 	res = intset_equal_internal(setA, setB);
 	PG_RETURN_BOOL(res);
 
@@ -336,7 +342,6 @@ intset_equal(PG_FUNCTION_ARGS){
 
 
 //A && B  takes the set intersection, and produces an intSet containing the elements common to A and B; that is, A∩B.
-//referenced from _int_tool.c from build-in type intarray
 intSet*
 intset_intersection_internal(intSet *setA, intSet *setB)
 {	
@@ -359,7 +364,7 @@ intset_intersection_internal(intSet *setA, intSet *setB)
 	dr = (int*)calloc(na+nb,sizeof(int));
 
 	i = j = k = 0;
-	while (i < na && j < nb)		//get the intersection
+	while (i < na && j < nb)
 	{
 		if (da[i] < db[j])
 			i++;
@@ -374,14 +379,14 @@ intset_intersection_internal(intSet *setA, intSet *setB)
 			j++;
 	}
 	
-	if (k == 0)				//empty set
+	if (k == 0)
 	{
 		r = (intSet *)palloc(VARHDRSZ);
 		SET_VARSIZE(r,VARHDRSZ);
 		return r;
 	}
 	else
-		r = (intSet *)palloc(VARHDRSZ+k*VARHDRSZ);	//VARHDRSZ = sizeof(int32)
+		r = (intSet *)palloc(VARHDRSZ+k*VARHDRSZ);
 		SET_VARSIZE(r, VARHDRSZ+k*VARHDRSZ);
 		memcpy(VARDATA(r),dr,k*VARHDRSZ);
 		return r;
@@ -403,7 +408,6 @@ intset_intersection(PG_FUNCTION_ARGS){
 
 
 //A || B  takes the set union, and produces an intSet containing all the elements of A and B; that is, A∪B.
-//referenced from _int_tool.c from build-in type intarray
 intSet*
 intset_union_internal(intSet *setA, intSet *setB){
 	intSet  *r = NULL;
@@ -416,20 +420,20 @@ intset_union_internal(intSet *setA, intSet *setB){
 	da =(int*) VARDATA(setA);
 	db = (int*)VARDATA(setB);
 
-	if (na == 0 && nb == 0){	//if two empty sets input
+	if (na == 0 && nb == 0){
 		return setA;
 	}
 	else if (na == 0)
-		return setB;		//if set a is empty
+		return setB;
 			
-	else if (nb == 0)		//if set b is empty
+	else if (nb == 0)
 		return setA;
 	
-	else				//if both are not empty
+	else
 	{	
 		dr = (int*)calloc(na+nb,sizeof(int));
 		
-		// union 
+		/* union */
 		i = j =k= 0;
 		while (i < na && j < nb)
 		{
@@ -485,7 +489,7 @@ intset_disjunction_internal(intSet *setA, intSet *setB){
 	da =(int*) VARDATA(setA);
 	db = (int*)VARDATA(setB);
 	
-	if (na == 0){				// if set a is empty
+	if (na == 0){
 		dr = (int*)calloc(na+nb,sizeof(int));
 		i=0;
 		for(i=0;i<nb;i++){
@@ -497,7 +501,7 @@ intset_disjunction_internal(intSet *setA, intSet *setB){
 		free(dr);
 		return r;
 	}
-	else if (nb == 0){			//if set b is empty
+	else if (nb == 0){
 		dr = (int*)calloc(na+nb,sizeof(int));
 		i=0;
 		for(i=0;i<na;i++){
@@ -509,12 +513,12 @@ intset_disjunction_internal(intSet *setA, intSet *setB){
 		free(dr);
 		return r;
 
-	}else if (na == 0 && nb == 0){		//if two empty sets input
+	}else if (na == 0 && nb == 0){
 		r = (intSet *)palloc(VARHDRSZ);
 		SET_VARSIZE(r,VARHDRSZ);
 		return r;	
 	
-	}else{					//if both are not empty
+	}else{
 		dr = (int*)calloc(na+nb,sizeof(int));
 	
 		i=j=k=m=n=0;
@@ -578,13 +582,13 @@ intset_difference_internal(intSet *setA, intSet *setB){
 	da =(int*) VARDATA(setA);
 	db = (int*)VARDATA(setB);
 
-	if (na == 0){				//if set a is empty
+	if (na == 0){
 		r = (intSet *)palloc(VARHDRSZ);
 		SET_VARSIZE(r,VARHDRSZ);
 		return r;
 	}
 
-	else if (nb == 0){			//if set b is empty
+	else if (nb == 0){
 		dr = (int*)calloc(na+nb,sizeof(int));
 		i=0;
 		for(i=0;i<na;i++){
@@ -595,7 +599,7 @@ intset_difference_internal(intSet *setA, intSet *setB){
 		memcpy(VARDATA(r),dr,na*VARHDRSZ);
 		return r;
 		
-	}else{			
+	}else{
 		dr = (int*)calloc(na+nb,sizeof(int));
 		i=j=k=0;
 		for (j=0;j<na;j++){
@@ -629,3 +633,7 @@ intset_difference(PG_FUNCTION_ARGS)
 	result = intset_difference_internal(setA, setB);
 	PG_RETURN_POINTER(result);
 }
+
+
+
+
