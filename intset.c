@@ -165,7 +165,7 @@ intset_out(PG_FUNCTION_ARGS)
 	char *new;
 	int *res = (int*)VARDATA(intset);
 	int max_mem = 200;
-	length = VARSIZE_ANY_EXHDR(intset)/4;
+	length = VARSIZE_ANY_EXHDR(intset)/4;   //get the number of element
 	
 	if(length==0) out = (char*)palloc0(3*sizeof(char));
 	else out=calloc(200,sizeof(char));
@@ -173,8 +173,8 @@ intset_out(PG_FUNCTION_ARGS)
 	out[0]='{';
 	for(i =0;i< length;i++) {
 		offset+=sprintf(out+offset,"%d,",res[i]);
-		if(max_mem-offset<=10) {
-			max_mem+=200;
+		if(max_mem-offset<=10) {        //since we don't know the number of characters when convert interger to string, 
+			max_mem+=200;		//add the space of memory when needed
 			new =calloc(offset+1,sizeof(char));
 			memcpy(new,out,offset+1);			
 			free(out);			
@@ -183,7 +183,6 @@ intset_out(PG_FUNCTION_ARGS)
 			free(new);
 		}	
 	}
-	
 	if (length==0) offset+=sprintf(out+1,"}");
 	else sprintf(out+offset-1,"}");
 	PG_RETURN_CSTRING(out);	
