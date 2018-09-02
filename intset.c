@@ -59,6 +59,12 @@ intset_in(PG_FUNCTION_ARGS)
 				quo_flag=1;
 
 			}
+			else if(str[i]=='-' || str[i]=='+'){
+				if(isdigit(str[i+1])==0)
+					 ereport(ERROR,
+						(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+						  errmsg("invalid input syntax for intSet")));
+			}
 			else if(str[i]=='}'){   //check for duplicate '}' 
 				if(i!=index-1){
 					ereport(ERROR,
@@ -86,6 +92,11 @@ intset_in(PG_FUNCTION_ARGS)
 			
 		}
 		temp[j]=0;
+	}
+	if (quo_flag ==1){
+		 ereport(ERROR,
+			(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+			 errmsg("invalid input syntax for intSet:end with comma")));   
 	}
 	if (length>=1) length++;
 	if (strlen(temp)==3) length =1; 
@@ -636,3 +647,4 @@ intset_difference(PG_FUNCTION_ARGS)
 	result = intset_difference_internal(setA, setB);
 	PG_RETURN_POINTER(result);
 }
+
