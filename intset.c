@@ -41,7 +41,6 @@ intset_in(PG_FUNCTION_ARGS)
 	int length=0;
 	int i,j=0,k=0,m=0,t=0;
 	int index =strlen(str);
-	
 	char *temp=calloc(index+1,sizeof(char));
 	char *token;
 	int *res;
@@ -91,7 +90,7 @@ intset_in(PG_FUNCTION_ARGS)
 	if (length>=1) length++;
 	if (strlen(temp)==3) length =1; 
 	j=0;
-
+	
 	res = (int*)calloc(length,VARHDRSZ);
 	token= strtok(temp,",");
 	if(temp[0]!='{')  ereport(ERROR,
@@ -141,12 +140,13 @@ intset_in(PG_FUNCTION_ARGS)
 		}
 	}
 	
-	length =m;
-	result =(intSet *)palloc(VARHDRSZ+m*sizeof(int32));
 	
-	SET_VARSIZE(result,VARHDRSZ+m*sizeof(int32));
-		
-	memcpy((void*)VARDATA(result),res,VARSIZE(result)-VARHDRSZ);
+	
+	result =(intSet *)palloc(VARHDRSZ+m*VARHDRSZ);
+	
+	SET_VARSIZE(result,VARHDRSZ+m*VARHDRSZ);
+	 	
+	memcpy((void*)VARDATA(result),res,m*VARHDRSZ);
 	
 	PG_RETURN_POINTER(result);
 }
@@ -158,8 +158,7 @@ PG_FUNCTION_INFO_V1(intset_out);
 
 Datum
 intset_out(PG_FUNCTION_ARGS)
-{
-	
+{	
 	intSet    *intset = (intSet *) PG_DETOAST_DATUM(PG_GETARG_POINTER(0));
 	int	 i,offset=1,length=0;
 	char *out;
@@ -167,25 +166,27 @@ intset_out(PG_FUNCTION_ARGS)
 	int *res = (int*)VARDATA(intset);
 	int max_mem = 200;
 	length = VARSIZE_ANY_EXHDR(intset)/4;
-
+	
 	if(length==0) out = (char*)palloc0(3*sizeof(char));
-	else out=(char*)calloc(200,sizeof(char));
+	else out=calloc(200,sizeof(char));
 	
 	out[0]='{';
 	for(i =0;i< length;i++) {
 		offset+=sprintf(out+offset,"%d,",res[i]);
 		if(max_mem-offset<=10) {
-			new =realloc(out,offset*sizeof(char));
-			free(out);			
 			max_mem+=200;
+			new =calloc(offset+1,sizeof(char));
+			memcpy(new,out,offset+1);			
+			free(out);			
 			out = calloc(max_mem,sizeof(char));
-			memcpy(out,new,offset);
+			memcpy(out,new,max_mem);
 			free(new);
 		}	
 	}
+	
 	if (length==0) offset+=sprintf(out+1,"}");
 	else sprintf(out+offset-1,"}");
-	PG_RETURN_CSTRING(out);
+	PG_RETURN_CSTRING(out);	
 	
 }
 
@@ -636,3 +637,4 @@ intset_difference(PG_FUNCTION_ARGS)
 	result = intset_difference_internal(setA, setB);
 	PG_RETURN_POINTER(result);
 }
+
