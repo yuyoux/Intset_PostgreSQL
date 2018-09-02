@@ -636,4 +636,3 @@ intset_difference(PG_FUNCTION_ARGS)
 	result = intset_difference_internal(setA, setB);
 	PG_RETURN_POINTER(result);
 }
-
